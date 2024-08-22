@@ -7,13 +7,13 @@
 
 #include <math.h>
 #include <stdio.h>
-#include <cmath>
+// #include <cmath>
 #include "complex.hpp"
 #include "mem_ops.hpp"
 #include "support.hpp"
 #include "user_types.hpp"
 
-int main(int argc, char* argv[]) {
+int main(/* int argc, char* argv[] */) {
 
     d_data domain_data;
     q_nums quantum_numbers;
