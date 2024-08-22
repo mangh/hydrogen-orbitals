@@ -1,0 +1,15 @@
+# VCIDEInstallDir=C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\VC\
+# VCINSTALLDIR=C:\Program Files\Microsoft Visual Studio\2022\Community\VC\
+# VCToolsInstallDir=C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.41.34120\
+# VCToolsRedistDir=C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Redist\MSVC\14.41.34120\
+# VCToolsVersion=14.41.34120
+# VisualStudioVersion=17.0
+CompileFlags:
+  Add: 
+  - -std=c++17
+  - -I C:/Users/marek/source/repos/hydrogen-orbitals/Metrology/Units
+  - -I C:/Users/marek/source/repos/hydrogen-orbitals/build/_deps/catch2-src/src
+  - -I C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.41.34120/include
+Diagnostics:
+  UnusedIncludes: Strict
+#  ClangTidy: modernize-*
