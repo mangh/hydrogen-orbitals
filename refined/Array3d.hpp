@@ -11,13 +11,14 @@
 
 namespace HydrogenOrbitals
 {
-    using ComplexData = std::complex<double>;
+    using numeral_t = double;
+    using complex_t = std::complex<numeral_t>;
 
     /**
-     * @brief 3-dimensional array (A[i][j][k]) of numbers (including complex numbers)
+     * @brief 3-dimensional array of numbers (including complex numbers).
      * 
      */
-    template<typename T = std::complex<double>>
+    template<typename T = numeral_t>
     struct Array3d
     {
         ///////////////////////////////////////////////////////////////////
@@ -79,7 +80,7 @@ namespace HydrogenOrbitals
          * @brief Array subscript operator
          * 
          * @param r 
-         * @returns constexpr std::vector<std::vector<ComplexData>>& 
+         * @returns constexpr std::vector<std::vector<complex_t
          */
         CONSTEXPR_SINCE_CXX20 std::vector<std::vector<T>>& operator[](std::size_t i) const
         {

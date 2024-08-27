@@ -12,7 +12,7 @@ namespace HydrogenOrbitals
 {
     constexpr double M_PI = 3.141592653589793238462643383279502884L;
 
-    // using ComplexData = std::complex<double>;
+    // using complex_t = std::complex<double>;
 
     /**
      * @brief Solution data.
@@ -43,17 +43,11 @@ namespace HydrogenOrbitals
         /// @brief brief description
         std::vector<double> phi_p;
 
-        // /// @brief brief std::complex<double> psi[d.n_r][d.n_theta][d.n_phi]
-        // std::vector<std::vector<std::vector<ComplexData>>> psi;
-
-        // /// @brief brief description
-        // std::vector<std::vector<std::vector<ComplexData>>> psi_square;
+        /// @brief brief description
+        Array3d<complex_t> psi;
 
         /// @brief brief description
-        Array3d<ComplexData> psi;
-
-        /// @brief brief description
-        Array3d<ComplexData> psi_square;
+        Array3d<numeral_t> psi_square;
 
         /// @brief brief description
         double E;
@@ -160,7 +154,7 @@ namespace HydrogenOrbitals
                 {
                     for (std::size_t k = 0; k < dd.n_phi; ++k)
                     {
-                        psi[i][j][k] = ComplexData{ 0.0, 0.0 };
+                        psi[i][j][k] = complex_t{ 0.0, 0.0 };
                     }
                 }
             }
@@ -179,7 +173,7 @@ namespace HydrogenOrbitals
                             laguerre_polynomial(rho, 2 * qnum.l + 1, qnum.n - qnum.l - 1) *
                             legendre_polynomial(qnum.m, qnum.l, cos(phi_p[k]));
 
-                        ComplexData e_im_theta{ cos(qnum.m * theta_p[j]), sin(qnum.m * theta_p[j]) };
+                        complex_t e_im_theta{ cos(qnum.m * theta_p[j]), sin(qnum.m * theta_p[j]) };
 
                         psi[i][j][k] = e_im_theta * beta;
                     }
@@ -189,7 +183,7 @@ namespace HydrogenOrbitals
 
         void normalize_psi()
         {
-            ComplexData integral{ 0.0, 0.0 };
+            complex_t integral{ 0.0, 0.0 };
 
             double dr = dd.R / dd.n_r;
             double dtheta = 2.0 * M_PI / dd.n_theta;
@@ -199,7 +193,7 @@ namespace HydrogenOrbitals
             for (std::size_t i = 1; i < dd.n_r; ++i)
             {
                 double dV = 2.0 / 3.0 * M_PI * (1 - cos(dphi / 2)) * (r[i] * r[i] * r[i] - r[i - 1] * r[i - 1] * r[i - 1]);
-                ComplexData psi_sq = (psi[i][0][0] * conj(psi[i][0][0])) * dV;
+                complex_t psi_sq = (psi[i][0][0] * conj(psi[i][0][0])) * dV;
                 integral += psi_sq;
             }
 
@@ -211,7 +205,7 @@ namespace HydrogenOrbitals
                     for (std::size_t k = 1; k < dd.n_phi - 1; ++k)
                     {
                         double dV = r_p[i] * r_p[i] * sin(phi_p[k]) * dphi * dtheta * dr;
-                        ComplexData psi_sq = (psi[i][j][k] * conj(psi[i][j][k])) * dV;
+                        complex_t psi_sq = (psi[i][j][k] * conj(psi[i][j][k])) * dV;
                         integral += psi_sq;
                     }
                 }
@@ -221,7 +215,7 @@ namespace HydrogenOrbitals
             for (std::size_t i = 1; i < dd.n_r; ++i)
             {
                 double dV = 2.0 / 3.0 * M_PI * (1 - cos(dphi / 2.0)) * (r[i] * r[i] * r[i] - r[i - 1] * r[i - 1] * r[i - 1]);
-                ComplexData psi_sq = (psi[i][0][dd.n_phi - 1] * conj(psi[i][0][dd.n_phi - 1])) * dV;
+                complex_t psi_sq = (psi[i][0][dd.n_phi - 1] * conj(psi[i][0][dd.n_phi - 1])) * dV;
                 integral += psi_sq;
             }
 
@@ -246,7 +240,7 @@ namespace HydrogenOrbitals
                 {
                     for (std::size_t k = 0; k < dd.n_phi; ++k)
                     {
-                        psi_square[i][j][k] = psi[i][j][k] * conj(psi[i][j][k]);
+                        psi_square[i][j][k] = norm(psi[i][j][k]);
                     }
                 }
             }
@@ -261,9 +255,9 @@ namespace HydrogenOrbitals
                 {
                     for (std::size_t k = 0; k < dd.n_phi; ++k)
                     {
-                        if (psi_square[i][j][k].real() > max_pd)
+                        if (psi_square[i][j][k] > max_pd)
                         {
-                            max_pd = psi_square[i][j][k].real();
+                            max_pd = psi_square[i][j][k];
                         }
                     }
                 }
@@ -320,7 +314,7 @@ namespace HydrogenOrbitals
                     {
                         double x = r_p[i] * sin(phi_p[k]) * cos(theta_p[j]);
                         double z = r_p[i] * cos(phi_p[k]);
-                        myfile_pd << x << " " << z << " " << psi_square[i][j][k].real() << std::endl;
+                        myfile_pd << x << " " << z << " " << psi_square[i][j][k] << std::endl;
                     }
                 }
             }
@@ -333,7 +327,7 @@ namespace HydrogenOrbitals
                     {
                         double x = r_p[i] * sin(phi_p[k]) * cos(theta_p[j]);
                         double z = r_p[i] * cos(phi_p[k]);
-                        myfile_pd << x << " " << z << " " << psi_square[i][j][k].real() << std::endl;
+                        myfile_pd << x << " " << z << " " << psi_square[i][j][k] << std::endl;
                     }
                 }
             }
@@ -461,9 +455,9 @@ namespace HydrogenOrbitals
 
         void verify_solution(PhysicalParameters params, QuantumNumbers qnum)
         {
-            Array3d<ComplexData> ratio(dd);
+            Array3d<complex_t> ratio(dd);
 
-            ComplexData ZERO{ 0.0, 0.0 };
+            complex_t ZERO{ 0.0, 0.0 };
 
             double dr = dd.R / dd.n_r;
             double dtheta = 2.0 * M_PI / dd.n_theta;
@@ -491,18 +485,18 @@ namespace HydrogenOrbitals
                         double aB = sin(phi[k - 1]) * alpha / (dV3 * dphi);
                         double aT = sin(phi[k]) * alpha / (dV3 * dphi);
 
-                        ComplexData psi_s{ -aS * psi[i - 1][j][k] };
-                        ComplexData psi_n{ -aN * psi[i + 1][j][k] };
-                        ComplexData psi_w{ -aW * psi[i][j - 1][k] };
-                        ComplexData psi_e{ -aE * psi[i][j + 1][k] };
-                        ComplexData psi_b{ -aB * psi[i][j][k - 1] };
-                        ComplexData psi_t{ -aT * psi[i][j][k + 1] };
+                        complex_t psi_s{ -aS * psi[i - 1][j][k] };
+                        complex_t psi_n{ -aN * psi[i + 1][j][k] };
+                        complex_t psi_w{ -aW * psi[i][j - 1][k] };
+                        complex_t psi_e{ -aE * psi[i][j + 1][k] };
+                        complex_t psi_b{ -aB * psi[i][j][k - 1] };
+                        complex_t psi_t{ -aT * psi[i][j][k + 1] };
 
-                        ComplexData psi_p_k_rp{ -params.kp / r_p[i] * psi[i][j][k] };
+                        complex_t psi_p_k_rp{ -params.kp / r_p[i] * psi[i][j][k] };
 
-                        ComplexData Fp{ psi_s + psi_n + psi_w + psi_e + psi_b + psi_t + psi_p_k_rp };
+                        complex_t Fp{ psi_s + psi_n + psi_w + psi_e + psi_b + psi_t + psi_p_k_rp };
                         double ap = aS + aN + aW + aE + aB + aT - E;
-                        ComplexData ap_psi_p{ -ap * psi[i][j][k] };
+                        complex_t ap_psi_p{ -ap * psi[i][j][k] };
 
                         ratio[i][j][k] = Fp / ap_psi_p;
                     }
