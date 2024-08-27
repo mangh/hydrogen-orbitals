@@ -1,11 +1,9 @@
 #ifndef SOLUTION_DATA_HPP
 #define SOLUTION_DATA_HPP
 
-// #include <complex>
 #include <fstream>
-// #include <vector>
 
-#include "Data3D.hpp"
+#include "Array3d.hpp"
 #include "DomainData.hpp"
 #include "PhysicalParameters.hpp"
 #include "QuantumNumbers.hpp"
@@ -52,10 +50,10 @@ namespace HydrogenOrbitals
         // std::vector<std::vector<std::vector<ComplexData>>> psi_square;
 
         /// @brief brief description
-        Data3D psi;
+        Array3d<ComplexData> psi;
 
         /// @brief brief description
-        Data3D psi_square;
+        Array3d<ComplexData> psi_square;
 
         /// @brief brief description
         double E;
@@ -88,37 +86,21 @@ namespace HydrogenOrbitals
             , psi(dd)
             , psi_square(dd)
         {
-            Initialize();
-
-            // for(int i = 0; i < dd.n_r; ++i)
-            // {
-            //     psi[i] = std::vector<std::vector<ComplexData>>(dd.n_theta);
-            //     psi_square[i] = std::vector<std::vector<ComplexData>>(dd.n_theta);
-            //     for(int j = 0; j < dd.n_theta; ++j)
-            //     {
-            //         psi[i][j] = std::vector<ComplexData>(dd.n_phi);
-            //         psi_square[i][j] = std::vector<ComplexData>(dd.n_phi);
-            //     }
-            // }
-        }
-
-        void Initialize(/* DomainData dd */)
-        {
             double dr = dd.R / dd.n_r;
             double dtheta = 2.0 * M_PI / dd.n_theta;
             double dphi = M_PI / (dd.n_phi - 1);
 
             // r & r_p vector 
-            for (int i = 0; i < dd.n_r; ++i) { r_p[i] = i * dr; r[i] = r_p[i] + 0.5 * dr; }
+            for (std::size_t i = 0; i < dd.n_r; ++i) { r_p[i] = i * dr; r[i] = r_p[i] + 0.5 * dr; }
 
             // theta_p vector
-            for (int i = 0; i < dd.n_theta; ++i) { theta_p[i] = i * dtheta + 0.5 * dtheta; }
+            for (std::size_t i = 0; i < dd.n_theta; ++i) { theta_p[i] = i * dtheta + 0.5 * dtheta; }
 
             // phi vector
-            for (int i = 0; i < dd.n_phi - 1; ++i) { phi[i] = i * dphi + 0.5 * dphi; }
+            for (std::size_t i = 0; i < dd.n_phi - 1; ++i) { phi[i] = i * dphi + 0.5 * dphi; }
 
             // phi_p vector
-            for (int i = 0; i < dd.n_phi; ++i) { phi_p[i] = i * dphi; }
+            for (std::size_t i = 0; i < dd.n_phi; ++i) { phi_p[i] = i * dphi; }
         }
 
         ///////////////////////////////////////////////////////////////////
@@ -172,22 +154,22 @@ namespace HydrogenOrbitals
 
         void compute_wave_function(const PhysicalParameters& param, const QuantumNumbers& qnum)
         {
-            for (int i = 0; i < 1; ++i)
+            for (std::size_t i = 0; i < 1; ++i)
             {
-                for (int j = 0; j < dd.n_theta; ++j)
+                for (std::size_t j = 0; j < dd.n_theta; ++j)
                 {
-                    for (int k = 0; k < dd.n_phi; ++k)
+                    for (std::size_t k = 0; k < dd.n_phi; ++k)
                     {
                         psi[i][j][k] = ComplexData{ 0.0, 0.0 };
                     }
                 }
             }
 
-            for (int i = 1; i < dd.n_r; ++i)
+            for (std::size_t i = 1; i < dd.n_r; ++i)
             {
-                for (int j = 0; j < dd.n_theta; ++j)
+                for (std::size_t j = 0; j < dd.n_theta; ++j)
                 {
-                    for (int k = 0; k < dd.n_phi; ++k)
+                    for (std::size_t k = 0; k < dd.n_phi; ++k)
                     {
                         double rho = 2.0 * r_p[i] / (qnum.n * param.a0);
 
@@ -214,7 +196,7 @@ namespace HydrogenOrbitals
             double dphi = M_PI / (dd.n_phi - 1);
 
             /* Top pole */
-            for (int i = 1; i < dd.n_r; ++i)
+            for (std::size_t i = 1; i < dd.n_r; ++i)
             {
                 double dV = 2.0 / 3.0 * M_PI * (1 - cos(dphi / 2)) * (r[i] * r[i] * r[i] - r[i - 1] * r[i - 1] * r[i - 1]);
                 ComplexData psi_sq = (psi[i][0][0] * conj(psi[i][0][0])) * dV;
@@ -222,11 +204,11 @@ namespace HydrogenOrbitals
             }
 
             /* Central nodes */
-            for (int i = 1; i < dd.n_r; ++i)
+            for (std::size_t i = 1; i < dd.n_r; ++i)
             {
-                for (int j = 0; j < dd.n_theta; ++j)
+                for (std::size_t j = 0; j < dd.n_theta; ++j)
                 {
-                    for (int k = 1; k < dd.n_phi - 1; ++k)
+                    for (std::size_t k = 1; k < dd.n_phi - 1; ++k)
                     {
                         double dV = r_p[i] * r_p[i] * sin(phi_p[k]) * dphi * dtheta * dr;
                         ComplexData psi_sq = (psi[i][j][k] * conj(psi[i][j][k])) * dV;
@@ -236,7 +218,7 @@ namespace HydrogenOrbitals
             }
 
             /* Bottom pole */
-            for (int i = 1; i < dd.n_r; ++i)
+            for (std::size_t i = 1; i < dd.n_r; ++i)
             {
                 double dV = 2.0 / 3.0 * M_PI * (1 - cos(dphi / 2.0)) * (r[i] * r[i] * r[i] - r[i - 1] * r[i - 1] * r[i - 1]);
                 ComplexData psi_sq = (psi[i][0][dd.n_phi - 1] * conj(psi[i][0][dd.n_phi - 1])) * dV;
@@ -244,11 +226,11 @@ namespace HydrogenOrbitals
             }
 
             /* Normalize */
-            for (int i = 1; i < dd.n_r; ++i)
+            for (std::size_t i = 1; i < dd.n_r; ++i)
             {
-                for (int j = 0; j < dd.n_theta; ++j)
+                for (std::size_t j = 0; j < dd.n_theta; ++j)
                 {
-                    for (int k = 0; k < dd.n_phi; ++k)
+                    for (std::size_t k = 0; k < dd.n_phi; ++k)
                     {
                         psi[i][j][k] /= sqrt(integral.real());
                     }
@@ -258,11 +240,11 @@ namespace HydrogenOrbitals
 
         void compute_probability_density()
         {
-            for (int i = 0; i < dd.n_r; ++i)
+            for (std::size_t i = 0; i < dd.n_r; ++i)
             {
-                for (int j = 0; j < dd.n_theta; ++j)
+                for (std::size_t j = 0; j < dd.n_theta; ++j)
                 {
-                    for (int k = 0; k < dd.n_phi; ++k)
+                    for (std::size_t k = 0; k < dd.n_phi; ++k)
                     {
                         psi_square[i][j][k] = psi[i][j][k] * conj(psi[i][j][k]);
                     }
@@ -273,11 +255,11 @@ namespace HydrogenOrbitals
         double compute_max_pd()
         {
             double max_pd = -1e+8;
-            for (int i = 0; i < dd.n_r; ++i)
+            for (std::size_t i = 0; i < dd.n_r; ++i)
             {
-                for (int j = 0; j < dd.n_theta; ++j)
+                for (std::size_t j = 0; j < dd.n_theta; ++j)
                 {
-                    for (int k = 0; k < dd.n_phi; ++k)
+                    for (std::size_t k = 0; k < dd.n_phi; ++k)
                     {
                         if (psi_square[i][j][k].real() > max_pd)
                         {
@@ -292,11 +274,11 @@ namespace HydrogenOrbitals
         double compute_max_psi_real()
         {
             double max_real = -1e+8;
-            for (int i = 0; i < dd.n_r; ++i)
+            for (std::size_t i = 0; i < dd.n_r; ++i)
             {
-                for (int j = 0; j < dd.n_theta; ++j)
+                for (std::size_t j = 0; j < dd.n_theta; ++j)
                 {
-                    for (int k = 0; k < dd.n_phi; ++k)
+                    for (std::size_t k = 0; k < dd.n_phi; ++k)
                     {
                         if (psi[i][j][k].real() > max_real)
                         {
@@ -330,11 +312,11 @@ namespace HydrogenOrbitals
             myfile_pd.open(file_name);
 
             /* Export psi central nodes */
-            for (int i = 0; i < dd.n_r; ++i)
+            for (std::size_t i = 0; i < dd.n_r; ++i)
             {
-                for (int j = 0; j < 1; ++j)
+                for (std::size_t j = 0; j < 1; ++j)
                 {
-                    for (int k = 0; k < dd.n_phi; ++k)
+                    for (std::size_t k = 0; k < dd.n_phi; ++k)
                     {
                         double x = r_p[i] * sin(phi_p[k]) * cos(theta_p[j]);
                         double z = r_p[i] * cos(phi_p[k]);
@@ -343,11 +325,11 @@ namespace HydrogenOrbitals
                 }
             }
 
-            for (int i = 0; i < dd.n_r; ++i)
+            for (std::size_t i = 0; i < dd.n_r; ++i)
             {
-                for (int j = dd.n_theta / 2; j < dd.n_theta / 2 + 1; ++j)
+                for (std::size_t j = dd.n_theta / 2; j < dd.n_theta / 2 + 1; ++j)
                 {
-                    for (int k = 0; k < dd.n_phi; ++k)
+                    for (std::size_t k = 0; k < dd.n_phi; ++k)
                     {
                         double x = r_p[i] * sin(phi_p[k]) * cos(theta_p[j]);
                         double z = r_p[i] * cos(phi_p[k]);
@@ -364,14 +346,14 @@ namespace HydrogenOrbitals
             std::ofstream myfile_real;
             myfile_real.open(file_name);
 
-            int theta_slice = 0; // Should be a value between 0 and n_theta / 2 - 2
+            std::size_t theta_slice = 0; // Should be a value between 0 and n_theta / 2 - 2
 
             /* Export psi central nodes */
-            for (int i = 0; i < dd.n_r; ++i)
+            for (std::size_t i = 0; i < dd.n_r; ++i)
             {
-                for (int j = theta_slice; j < theta_slice + 1; ++j)
+                for (std::size_t j = theta_slice; j < theta_slice + 1; ++j)
                 {
-                    for (int k = 0; k < dd.n_phi; ++k)
+                    for (std::size_t k = 0; k < dd.n_phi; ++k)
                     {
                         double x = r_p[i] * sin(phi_p[k]) * cos(theta_p[j]);
                         double z = r_p[i] * cos(phi_p[k]);
@@ -380,11 +362,11 @@ namespace HydrogenOrbitals
                 }
             }
 
-            for (int i = 0; i < dd.n_r; ++i)
+            for (std::size_t i = 0; i < dd.n_r; ++i)
             {
-                for (int j = dd.n_theta / 2 + theta_slice; j < dd.n_theta / 2 + theta_slice + 1; ++j)
+                for (std::size_t j = dd.n_theta / 2 + theta_slice; j < dd.n_theta / 2 + theta_slice + 1; ++j)
                 {
-                    for (int k = 0; k < dd.n_phi; ++k)
+                    for (std::size_t k = 0; k < dd.n_phi; ++k)
                     {
                         double x = r_p[i] * sin(phi_p[k]) * cos(theta_p[j]);
                         double z = r_p[i] * cos(phi_p[k]);
@@ -401,14 +383,14 @@ namespace HydrogenOrbitals
             std::ofstream myfile_im;
             myfile_im.open(file_name);
 
-            int theta_slice = 0; // Should be a value between 0 and n_theta / 2 - 2
+            std::size_t theta_slice = 0; // Should be a value between 0 and n_theta / 2 - 2
 
             /* Export psi central nodes */
-            for (int i = 0; i < dd.n_r; ++i)
+            for (std::size_t i = 0; i < dd.n_r; ++i)
             {
-                for (int j = theta_slice; j < theta_slice + 1; ++j)
+                for (std::size_t j = theta_slice; j < theta_slice + 1; ++j)
                 {
-                    for (int k = 0; k < dd.n_phi; ++k)
+                    for (std::size_t k = 0; k < dd.n_phi; ++k)
                     {
                         double x = r_p[i] * sin(phi_p[k]) * cos(theta_p[j]);
                         double z = r_p[i] * cos(phi_p[k]);
@@ -417,11 +399,11 @@ namespace HydrogenOrbitals
                 }
             }
 
-            for (int i = 0; i < dd.n_r; ++i)
+            for (std::size_t i = 0; i < dd.n_r; ++i)
             {
-                for (int j = dd.n_theta / 2 + theta_slice; j < dd.n_theta / 2 + theta_slice + 1; ++j)
+                for (std::size_t j = dd.n_theta / 2 + theta_slice; j < dd.n_theta / 2 + theta_slice + 1; ++j)
                 {
-                    for (int k = 0; k < dd.n_phi; ++k)
+                    for (std::size_t k = 0; k < dd.n_phi; ++k)
                     {
                         double x = r_p[i] * sin(phi_p[k]) * cos(theta_p[j]);
                         double z = r_p[i] * cos(phi_p[k]);
@@ -439,11 +421,11 @@ namespace HydrogenOrbitals
             myfile_phi_2.open(file_name);
 
             /* Export psi central nodes */
-            for (int i = 0; i < dd.n_r; ++i)
+            for (std::size_t i = 0; i < dd.n_r; ++i)
             {
-                for (int j = 0; j < dd.n_theta; ++j)
+                for (std::size_t j = 0; j < dd.n_theta; ++j)
                 {
-                    for (int k = dd.n_phi / 2; k < dd.n_phi / 2 + 1; ++k)
+                    for (std::size_t k = dd.n_phi / 2; k < dd.n_phi / 2 + 1; ++k)
                     {
                         double x = r_p[i] * sin(phi_p[k]) * cos(theta_p[j]);
                         double y = r_p[i] * sin(phi_p[k]) * sin(theta_p[j]);
@@ -461,11 +443,11 @@ namespace HydrogenOrbitals
             myfile_phi_2_im.open(file_name);
 
             /* Export psi central nodes */
-            for (int i = 0; i < dd.n_r; ++i)
+            for (std::size_t i = 0; i < dd.n_r; ++i)
             {
-                for (int j = 0; j < dd.n_theta; ++j)
+                for (std::size_t j = 0; j < dd.n_theta; ++j)
                 {
-                    for (int k = dd.n_phi / 2; k < dd.n_phi / 2 + 1; ++k)
+                    for (std::size_t k = dd.n_phi / 2; k < dd.n_phi / 2 + 1; ++k)
                     {
                         double x = r_p[i] * sin(phi_p[k]) * cos(theta_p[j]);
                         double y = r_p[i] * sin(phi_p[k]) * sin(theta_p[j]);
@@ -479,7 +461,7 @@ namespace HydrogenOrbitals
 
         void verify_solution(PhysicalParameters params, QuantumNumbers qnum)
         {
-            Data3D ratio(dd);
+            Array3d<ComplexData> ratio(dd);
 
             ComplexData ZERO{ 0.0, 0.0 };
 
@@ -489,11 +471,11 @@ namespace HydrogenOrbitals
             double alpha = params.h / (2.0 * params.mp);
             double E = params.ke / (qnum.n * qnum.n);
 
-            for (int i = 1; i < dd.n_r - 1; ++i)
+            for (std::size_t i = 1; i < dd.n_r - 1; ++i)
             {
-                for (int j = 1; j < dd.n_theta - 1; ++j)
+                for (std::size_t j = 1; j < dd.n_theta - 1; ++j)
                 {
-                    for (int k = 1; k < dd.n_phi - 1; ++k)
+                    for (std::size_t k = 1; k < dd.n_phi - 1; ++k)
                     {
                         if (psi[i][j][k] == ZERO)
                             continue;
@@ -529,11 +511,11 @@ namespace HydrogenOrbitals
 
             /* Compute error */
             error = 0.0;
-            for (int i = 1; i < dd.n_r - 1; ++i)
+            for (std::size_t i = 1; i < dd.n_r - 1; ++i)
             {
-                for (int j = 1; j < dd.n_theta - 1; ++j)
+                for (std::size_t j = 1; j < dd.n_theta - 1; ++j)
                 {
-                    for (int k = 1; k < dd.n_phi - 1; ++k)
+                    for (std::size_t k = 1; k < dd.n_phi - 1; ++k)
                     {
                         if (fabs(ratio[i][j][k].real()) > 0.2)
                         {

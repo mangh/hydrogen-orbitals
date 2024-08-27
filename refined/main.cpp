@@ -9,6 +9,8 @@
 #include "QuantumNumbers.hpp"
 #include "PhysicalParameters.hpp"
 #include "SolutionData.hpp"
+#include <ios>
+#include <iostream>
 
 using namespace HydrogenOrbitals;
 
@@ -77,15 +79,16 @@ int main()
     sd.verify_solution(params, qn);
 
     /* Print some results */
-    for(int i = 0; i < dd.n_r; ++i)
+    for(std::size_t i = 0; i < dd.n_r; ++i)
     {
-        int theta = dd.n_theta / 4;
-        int phi = dd.n_phi / 2;
-        printf("real psi[%i][%i][%i]: %f, im psi[%i][%i][%i]: %f\n",
-            i, theta, phi, sd.psi[i][theta][phi].real(),
-            i, theta, phi, sd.psi[i][theta][phi].imag()
-        );
+        std::size_t theta = dd.n_theta / 4;
+        std::size_t phi = dd.n_phi / 2;
+        std::cout
+            << "real psi[" << i << "][" << theta << "][" << phi << "]: " << std::fixed << sd.psi[i][theta][phi].real()
+            << ", im psi[" << i << "][" << theta << "][" << phi << "]: " << std::fixed << sd.psi[i][theta][phi].imag()
+            << std::endl
+            ;
     }
 
-    printf("error in percentage : %f\n", sd.error);
+    std::cout << "error in percentage : " << std::fixed << sd.error << std::endl;
 }
