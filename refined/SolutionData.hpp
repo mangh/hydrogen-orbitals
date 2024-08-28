@@ -10,9 +10,8 @@
 
 namespace HydrogenOrbitals
 {
-    constexpr double M_PI = 3.141592653589793238462643383279502884L;
-
-    // using complex_t = std::complex<double>;
+    constexpr numeral_t M_PI = 3.141592653589793238462643383279502884L;
+    constexpr complex_t CZERO{ 0.0, 0.0 };
 
     /**
      * @brief Solution data.
@@ -20,6 +19,11 @@ namespace HydrogenOrbitals
      */
     struct SolutionData
     {
+        ///////////////////////////////////////////////////////////////////
+        ///
+        ///     Constants
+        ///
+
         ///////////////////////////////////////////////////////////////////
         ///
         ///     Properties
@@ -154,7 +158,7 @@ namespace HydrogenOrbitals
                 {
                     for (std::size_t k = 0; k < dd.n_phi; ++k)
                     {
-                        psi[i][j][k] = complex_t{ 0.0, 0.0 };
+                        psi[i][j][k] = CZERO;
                     }
                 }
             }
@@ -183,7 +187,7 @@ namespace HydrogenOrbitals
 
         void normalize_psi()
         {
-            complex_t integral{ 0.0, 0.0 };
+            numeral_t integral{ 0.0 };
 
             double dr = dd.R / dd.n_r;
             double dtheta = 2.0 * M_PI / dd.n_theta;
@@ -192,8 +196,8 @@ namespace HydrogenOrbitals
             /* Top pole */
             for (std::size_t i = 1; i < dd.n_r; ++i)
             {
-                double dV = 2.0 / 3.0 * M_PI * (1 - cos(dphi / 2)) * (r[i] * r[i] * r[i] - r[i - 1] * r[i - 1] * r[i - 1]);
-                complex_t psi_sq = (psi[i][0][0] * conj(psi[i][0][0])) * dV;
+                numeral_t dV = 2.0 / 3.0 * M_PI * (1 - cos(dphi / 2)) * (r[i] * r[i] * r[i] - r[i - 1] * r[i - 1] * r[i - 1]);
+                numeral_t psi_sq = norm(psi[i][0][0]) * dV;
                 integral += psi_sq;
             }
 
@@ -204,8 +208,8 @@ namespace HydrogenOrbitals
                 {
                     for (std::size_t k = 1; k < dd.n_phi - 1; ++k)
                     {
-                        double dV = r_p[i] * r_p[i] * sin(phi_p[k]) * dphi * dtheta * dr;
-                        complex_t psi_sq = (psi[i][j][k] * conj(psi[i][j][k])) * dV;
+                        numeral_t dV = r_p[i] * r_p[i] * sin(phi_p[k]) * dphi * dtheta * dr;
+                        numeral_t psi_sq = norm(psi[i][j][k]) * dV;
                         integral += psi_sq;
                     }
                 }
@@ -214,8 +218,8 @@ namespace HydrogenOrbitals
             /* Bottom pole */
             for (std::size_t i = 1; i < dd.n_r; ++i)
             {
-                double dV = 2.0 / 3.0 * M_PI * (1 - cos(dphi / 2.0)) * (r[i] * r[i] * r[i] - r[i - 1] * r[i - 1] * r[i - 1]);
-                complex_t psi_sq = (psi[i][0][dd.n_phi - 1] * conj(psi[i][0][dd.n_phi - 1])) * dV;
+                numeral_t dV = 2.0 / 3.0 * M_PI * (1 - cos(dphi / 2.0)) * (r[i] * r[i] * r[i] - r[i - 1] * r[i - 1] * r[i - 1]);
+                numeral_t psi_sq = norm(psi[i][0][dd.n_phi - 1]) * dV;
                 integral += psi_sq;
             }
 
@@ -226,7 +230,7 @@ namespace HydrogenOrbitals
                 {
                     for (std::size_t k = 0; k < dd.n_phi; ++k)
                     {
-                        psi[i][j][k] /= sqrt(integral.real());
+                        psi[i][j][k] /= sqrt(integral);
                     }
                 }
             }
@@ -321,7 +325,7 @@ namespace HydrogenOrbitals
 
             for (std::size_t i = 0; i < dd.n_r; ++i)
             {
-                for (std::size_t j = dd.n_theta / 2; j < dd.n_theta / 2 + 1; ++j)
+                for (std::size_t j = dd.n_theta/2; j < dd.n_theta/2 + 1; ++j)
                 {
                     for (std::size_t k = 0; k < dd.n_phi; ++k)
                     {
@@ -457,8 +461,6 @@ namespace HydrogenOrbitals
         {
             Array3d<complex_t> ratio(dd);
 
-            complex_t ZERO{ 0.0, 0.0 };
-
             double dr = dd.R / dd.n_r;
             double dtheta = 2.0 * M_PI / dd.n_theta;
             double dphi = M_PI / (dd.n_phi - 1);
@@ -471,7 +473,7 @@ namespace HydrogenOrbitals
                 {
                     for (std::size_t k = 1; k < dd.n_phi - 1; ++k)
                     {
-                        if (psi[i][j][k] == ZERO)
+                        if (psi[i][j][k] == CZERO)
                             continue;
 
                         double dV1 = r_p[i] * r_p[i] * dr;
