@@ -2,7 +2,6 @@
 #define ARRAY3D_HPP
 
 #include <cassert>
-#include <complex>
 #include <vector>
 
 #include "cppfeatures.h"
@@ -11,9 +10,6 @@
 
 namespace HydrogenOrbitals
 {
-    using numeral_t = double;
-    using complex_t = std::complex<numeral_t>;
-
     /**
      * @brief 3-dimensional array of numbers (including complex numbers).
      * 

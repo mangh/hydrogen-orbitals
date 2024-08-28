@@ -52,10 +52,10 @@ int main()
     sd.compute_probability_density();
 
     /* Compute max probability density */
-    double max_pd = sd.compute_max_pd();
+    numeral_t max_pd = sd.compute_max_pd();
 
     /* Compute max psi_real */
-    double max_real = sd.compute_max_psi_real();
+    numeral_t max_real = sd.compute_max_psi_real();
 
     /* Export domain data */
     sd.export_grid_data("grid_data.txt", max_pd, max_real);

@@ -1,6 +1,7 @@
 #ifndef PHYSICAL_PARAMETERS_HPP
 #define PHYSICAL_PARAMETERS_HPP
 
+#include "Numeral.hpp"
 namespace HydrogenOrbitals
 {
     /**
@@ -15,19 +16,19 @@ namespace HydrogenOrbitals
         ///
 
         /// @brief Bohr radius.
-        const double a0;
+        const numeral_t a0;
 
         /// @brief Planck (???) constant.
-        const double h;
+        const numeral_t h;
 
         /// @brief Mass of particle.
-        const double mp;
+        const numeral_t mp;
 
         /// @brief Potential constant (???)
-        const double kp;
+        const numeral_t kp;
 
         /// @brief Constant in energy level equation (???).
-        const double ke;
+        const numeral_t ke;
 
         ///////////////////////////////////////////////////////////////////
         ///
@@ -51,7 +52,7 @@ namespace HydrogenOrbitals
          * @remarks Data used in Derek's (original) version: a0 = 1.0, h = 1.0, mp = 1.0, kp = 1.0, ke = 1.0.
          *
          */
-        PhysicalParameters(double a0, double h, double mp, double kp, double ke)
+        PhysicalParameters(numeral_t a0, numeral_t h, numeral_t mp, numeral_t kp, numeral_t ke)
             : a0(a0)
             , h(h)
             , mp(mp)

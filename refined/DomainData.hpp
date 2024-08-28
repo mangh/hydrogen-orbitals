@@ -2,11 +2,12 @@
 #define DOMAIN_DATA_HPP
 
 #include <cstddef>
+#include "Numeral.hpp"
 
 namespace HydrogenOrbitals
 {
     /**
-    * @brief Parameters
+    * @brief 3D grid parameters.
     * 
     */
     struct DomainData
@@ -26,7 +27,7 @@ namespace HydrogenOrbitals
         const std::size_t n_phi;
 
         /// @brief Length of domain.
-        const double R;
+        const numeral_t R;
 
         ///////////////////////////////////////////////////////////////////
         ///
@@ -49,7 +50,7 @@ namespace HydrogenOrbitals
         * @remarks Data used in Derek's (original) version: n_r = 200, n_theta = 40, n_phi = 20, R = 40.0.
         *
         */
-        DomainData(std::size_t n_r, std::size_t n_theta, std::size_t n_phi, double R)
+        DomainData(std::size_t n_r, std::size_t n_theta, std::size_t n_phi, numeral_t R)
             : n_r(n_r)
             , n_theta(n_theta)
             , n_phi(n_phi)
