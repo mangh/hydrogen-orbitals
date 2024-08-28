@@ -41,19 +41,19 @@ namespace HydrogenOrbitals
         /**
         * @brief DomainData constructor
         * 
-        * @param ct_r     - number of nodes in "r" direction,
-        * @param ct_theta - number of nodes in "theta" direction,
-        * @param ct_phi   - number of nodes in "phi" direction,
-        * @param R_length - length of domain.
+        * @param n_r     - number of nodes in "r" direction,
+        * @param n_theta - number of nodes in "theta" direction,
+        * @param n_phi   - number of nodes in "phi" direction,
+        * @param R       - length of domain.
         *
         * @remarks Data used in Derek's (original) version: n_r = 200, n_theta = 40, n_phi = 20, R = 40.0.
         *
         */
-        DomainData(std::size_t ct_r, std::size_t ct_theta, std::size_t ct_phi, double R_length)
-            : n_r(ct_r)
-            , n_theta(ct_theta)
-            , n_phi(ct_phi)
-            , R(R_length)
+        DomainData(std::size_t n_r, std::size_t n_theta, std::size_t n_phi, double R)
+            : n_r(n_r)
+            , n_theta(n_theta)
+            , n_phi(n_phi)
+            , R(R)
         {
         }
     };

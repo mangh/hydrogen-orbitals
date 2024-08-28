@@ -42,21 +42,21 @@ namespace HydrogenOrbitals
         /**
          * @brief PhysicalParameters constructor.
          * 
-         * @param a0_ - Bohr radius,
-         * @param h_  - Planck (???) constant,
-         * @param mp_ - Mass of particle,
-         * @param kp_ - Potential constant (???),
-         * @param ke_ - Constant in energy level equation (???).
+         * @param a0 - Bohr radius,
+         * @param h  - Planck (???) constant,
+         * @param mp - Mass of particle,
+         * @param kp - Potential constant (depending on the charge of the electron - ???),
+         * @param ke - Constant in energy level equation (???).
          *
          * @remarks Data used in Derek's (original) version: a0 = 1.0, h = 1.0, mp = 1.0, kp = 1.0, ke = 1.0.
          *
          */
-        PhysicalParameters(double a0_, double h_, double mp_, double kp_, double ke_)
-            : a0(a0_)
-            , h(h_)
-            , mp(mp_)
-            , kp(kp_)
-            , ke(ke_)
+        PhysicalParameters(double a0, double h, double mp, double kp, double ke)
+            : a0(a0)
+            , h(h)
+            , mp(mp)
+            , kp(kp)
+            , ke(ke)
         {
         }
     };

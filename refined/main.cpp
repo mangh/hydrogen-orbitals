@@ -18,26 +18,26 @@ int main()
 {
     DomainData dd
     {
-        200,    // number of nodes in r direction
-        40,     // number of nodes in theta direction
-        20,     // number of nodes in phi direction
+        200,    // number of nodes in "r" direction
+        40,     // number of nodes in "theta" direction
+        20,     // number of nodes in "phi" direction
         40.0    // length of domain
     };
 
     QuantumNumbers qn
     {
-        4,  // n - Principal quantum number
-        2,  // l - Azimuthal number
-        1,  // m - Magnetic quantum number
+        4,  // n - principal quantum number
+        2,  // l - azimuthal number
+        1,  // m - magnetic quantum number
     };
 
     PhysicalParameters params
     {
          1.0,   // a0_ - Bohr radius,
-         1.0,   // h_  - Planck (???) constant,
-         1.0,   // mp_ - Mass of particle,
-         1.0,   // kp_ - Potential constant (???),
-         1.0    // ke_ - Constant in energy level equation (???).
+         1.0,   // h_  - Planck constant (???),
+         1.0,   // mp_ - mass of particle,
+         1.0,   // kp_ - potential constant (???),
+         1.0    // ke_ - constant in energy level equation (???).
     };
 
     SolutionData sd{ dd };

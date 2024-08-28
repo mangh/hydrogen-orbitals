@@ -36,17 +36,17 @@ namespace HydrogenOrbitals
         /**
          * @brief QuantumNumbers constructor.
          * 
-         * @param n_ - principal quantum number,
-         * @param l_ - azimuthal number,
-         * @param m_ - magnetic quantum number.
+         * @param n - principal quantum number,
+         * @param l - azimuthal number,
+         * @param m - magnetic quantum number.
          *
          * @remarks Data used in Derek's (original) version: n = 4, l = 2, m = 1.
          *
          */
-        QuantumNumbers(int n_, int l_, int m_)
-            : n(n_)
-            , l(l_)
-            , m(m_)
+        QuantumNumbers(int n, int l, int m)
+            : n(n)
+            , l(l)
+            , m(m)
         {
         }
     };
