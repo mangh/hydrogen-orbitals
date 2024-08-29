@@ -3,6 +3,7 @@
 
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 namespace HydrogenOrbitals
 {
@@ -61,32 +62,44 @@ namespace HydrogenOrbitals
          * @param l - azimuthal number,
          * @param m - magnetic quantum number.
          * @param s - spin quantum number.
+         * @exception invalid_argument exception description
          *
          * @remarks Data used in Derek's (original) version: n = 4, l = 2, m = 1.
          *
          */
         QuantumNumbers(int n, int l, int m, double s = HALFSPIN)
-            : n(chk_principal_num(n))
-            , l(chk_azimuthal_num(n, l))
-            , m(chk_magnetic_num(l, m))
-            , s(chk_spin_num(s))
+            : n(n)
+            , l(l)
+            , m(m)
+            , s(s)
         {
+            check(n, l, m, s);
         }
 
         ///////////////////////////////////////////////////////////////////
         ///
-        ///     Static methods
+        ///     Validation methods
         ///
 
-        static bool is_principal_num_ok(int n) { return 1 <= n; }
-        static bool is_azimuthal_num_ok(int n, int l) { return 0 <= l && l <= n - 1; }
-        static bool is_magnetic_num_ok(int l, int m) { return -l <= m && m <= l; }
-        static bool is_spin_num_ok(double s) { return s == HALFSPIN || s == -HALFSPIN; }
+        static bool permissible(int n, int l, int m, double s)
+        {
+            return (1 <= n) &&
+                   (0 <= l) && (l <= n - 1) &&
+                   (-l <= m) && (m <= l) &&
+                   ((s == HALFSPIN) || (s == -HALFSPIN));
+        }
 
-        static int chk_principal_num(int n) { return is_principal_num_ok(n) ? n : throw invalid_argument("Invalid principal number n = " + to_string(n)); }
-        static int chk_azimuthal_num(int n, int l) { return is_azimuthal_num_ok(n, l) ? l : throw invalid_argument("Invalid azimuthal number l = " + to_string(l)); }
-        static int chk_magnetic_num(int l, int m) { return is_magnetic_num_ok(l, m) ? m : throw invalid_argument("Invalid magnetic number m = " + to_string(m)); }
-        static double chk_spin_num(double s) { return is_spin_num_ok(s) ? s : throw invalid_argument("Invalid spin number s = " + to_string(s)); }
+        static void check(int n, int l, int m, double s)
+        {
+            if (!permissible(n, l, m, s))
+            {
+                const char* format = "Invalid quantum numbers :: n = %d :: l = %d :: m = %d :: s = %f";
+                std::size_t len = std::snprintf(nullptr, 0, format, n, l, m, s);
+                std::vector<char> buf(len + 1);
+                std::snprintf(&buf[0], buf.size(), format, n, l, m, s);
+                throw invalid_argument(std::string(buf.cbegin(), buf.cend() - 1));
+            }
+        }
     };
 }
 
