@@ -17,13 +17,13 @@ namespace HydrogenOrbitals
         ///     Properties
         ///
 
-        /// @brief Number of nodes in "r" direction.
+        /// @brief Number of nodes in r-direction (radial coordinate).
         const std::size_t n_r;
 
-        /// @brief Number of nodes in "theta" direction.
+        /// @brief Number of nodes in θ-direction (azimuthal angle relative to the X-axis).
         const std::size_t n_theta;
 
-        /// @brief Number of nodes in "phi" direction.
+        /// @brief Number of nodes in φ-direction (polar angle relative to the vertical Z-axis).
         const std::size_t n_phi;
 
         /// @brief Length of domain.

@@ -18,9 +18,9 @@ int main()
 {
     DomainData dd
     {
-        200,    // number of nodes in "r" direction
-        40,     // number of nodes in "theta" direction
-        20,     // number of nodes in "phi" direction
+        200,    // number of nodes in "r" direction (radial coordinate)
+        40,     // number of nodes in "theta" direction (azimuthal angle)
+        20,     // number of nodes in "phi" direction (polar angle)
         40.0    // length of domain
     };
 

@@ -3,6 +3,10 @@
 
 #include <complex>
 
+/**
+ * @brief Number types used in calculations.
+ * 
+ */
 namespace HydrogenOrbitals
 {
     using numeral_t = double;
