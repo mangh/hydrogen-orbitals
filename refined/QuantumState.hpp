@@ -5,16 +5,20 @@
 #include <string>
 #include <vector>
 
+#include "Numeral.hpp"
+#include "SpecialPolynomial.hpp"
+
 namespace HydrogenOrbitals
 {
     using std::invalid_argument;
     using std::to_string;
+    using namespace SpecialPolynomial;
 
     /**
      * @brief Quantum numbers.
      * 
      */
-    struct QuantumNumbers
+    struct QuantumState
     {
         ///////////////////////////////////////////////////////////////////
         ///
@@ -53,10 +57,10 @@ namespace HydrogenOrbitals
         /**
         * @brief No default constructor!
         */
-        QuantumNumbers() = delete;
+        QuantumState() = delete;
 
         /**
-         * @brief QuantumNumbers constructor.
+         * @brief QuantumState constructor.
          * 
          * @param n - principal quantum number,
          * @param l - azimuthal number,
@@ -67,7 +71,7 @@ namespace HydrogenOrbitals
          * @remarks Data used in Derek's (original) version: n = 4, l = 2, m = 1.
          *
          */
-        QuantumNumbers(int n, int l, int m, double s = HALFSPIN)
+        QuantumState(int n, int l, int m, double s = HALFSPIN)
             : n(n)
             , l(l)
             , m(m)
@@ -75,11 +79,6 @@ namespace HydrogenOrbitals
         {
             check(n, l, m, s);
         }
-
-        ///////////////////////////////////////////////////////////////////
-        ///
-        ///     Validation methods
-        ///
 
         static bool permissible(int n, int l, int m, double s)
         {
@@ -99,6 +98,30 @@ namespace HydrogenOrbitals
                 std::snprintf(&buf[0], buf.size(), format, n, l, m, s);
                 throw invalid_argument(std::string(buf.cbegin(), buf.cend() - 1));
             }
+        }
+
+        ///////////////////////////////////////////////////////////////////
+        ///
+        ///     Methods
+        ///
+
+        /**
+         * @brief Wave function Ψ (non-normalized).
+         *
+         * @param rho - radius ρ = 2 ∙ r / (n ∙ a0),
+         * @param theta - azimuthal angle θ (the angle in the xy-plane from the x-axis with 0 ≤ θ < 2π),
+         * @param phi - polar angle ϕ (the angle from the positive z-axis with 0 ≤ ϕ ≤ π),
+         *
+         * @remarks Ψ[n,l,m](ρ,θ,ϕ) = C ∙ e^(-ρ/2) ∙ ρ^l ∙ L[n-l-1,2l+1](ρ) ∙ e^imθ ∙ P[l,m](cos⁡ ϕ)
+         *
+         */
+        complex_t PSI(numeral_t rho, numeral_t theta, numeral_t phi) const
+        {
+            return exp(-rho / 2.0)
+                 * pow(rho, l)
+                 * Ln(rho, 2 * l + 1, n - l - 1)
+                 * Pml(m, l, cos(phi))
+                 * complex_t{ cos(m * theta), sin(m * theta) };
         }
     };
 }

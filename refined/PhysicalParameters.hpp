@@ -43,7 +43,7 @@ namespace HydrogenOrbitals
         /**
          * @brief PhysicalParameters constructor.
          * 
-         * @param a0 - Bohr radius,
+         * @param a0 - reduced (?) Bohr radius,
          * @param h  - Planck (???) constant,
          * @param mp - Mass of particle,
          * @param kp - Potential constant (depending on the charge of the electron - ???),

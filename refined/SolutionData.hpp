@@ -5,9 +5,8 @@
 
 #include "Array3d.hpp"
 #include "DomainData.hpp"
-#include "Numeral.hpp"
 #include "PhysicalParameters.hpp"
-#include "QuantumNumbers.hpp"
+#include "QuantumState.hpp"
 
 namespace HydrogenOrbitals
 {
@@ -107,51 +106,7 @@ namespace HydrogenOrbitals
         ///     Methods
         ///
 
-        int factorial(int n)
-        {
-            return (n <= 0) ? 1 : n * factorial(n - 1);
-        }
-
-        long double P_l(long double x, int l)
-        {
-            long double P_l_x = 0.0L;
-            for (int k = 0; k < l / 2 + 1; ++k)
-            {
-                P_l_x += 1.0 /
-                    pow(2.0, l) *
-                    pow(-1.0, k) *
-                    factorial(2 * l - 2 * k) *
-                    pow(x, l - 2 * k) /
-                    (factorial(k) * factorial(l - k) * factorial(l - 2 * k));
-            }
-            return P_l_x;
-        }
-
-        long double dm_Pl_dxm(long double x, int m, int l)
-        {
-            long double dx = 0.0001L;
-            return
-                (m == 0) ? P_l(x, l) :
-                (m == 1) ? (P_l(x + dx, l) - P_l(x, l)) / dx :
-                (dm_Pl_dxm(x + dx, m - 1, l) - dm_Pl_dxm(x, m - 1, l)) / dx;
-        }
-
-        double legendre_polynomial(int m, int l, double x)
-        {
-            return(m >= 0) ?
-                pow(-1.0, m) * pow(1.0 - x * x, 0.5 * m) * dm_Pl_dxm(x, m, l) :
-                pow(-1.0, (-m)) * factorial(l - (-m)) / factorial(l + (-m)) * legendre_polynomial((-m), l, x);
-        }
-
-        long double laguerre_polynomial(long double x, int a, int k)
-        {
-            return
-                (k == 0) ? 1.0 :
-                (k == 1) ? 1.0 + a - x :
-                ((2.0 * (k - 1) + 1.0 + a - x) * laguerre_polynomial(x, a, k - 1) - (k - 1 + a) * laguerre_polynomial(x, a, k - 2)) / k;
-        }
-
-        void compute_wave_function(const PhysicalParameters& param, const QuantumNumbers& qnum)
+        void compute_wave_function(const PhysicalParameters& param, const QuantumState& qs)
         {
             for (std::size_t i = 0; i < 1; ++i)
             {
@@ -166,21 +121,14 @@ namespace HydrogenOrbitals
 
             for (std::size_t i = 1; i < dd.n_r; ++i)
             {
+                // ρ = 2∙r / (n∙a0)
+                numeral_t rho = 2.0 * r_p[i] / (qs.n * param.a0);
+
                 for (std::size_t j = 0; j < dd.n_theta; ++j)
                 {
                     for (std::size_t k = 0; k < dd.n_phi; ++k)
                     {
-                        numeral_t rho = 2.0 * r_p[i] / (qnum.n * param.a0);
-
-                        numeral_t beta =
-                            exp(-rho / 2.0) *
-                            pow(rho, qnum.l) *
-                            laguerre_polynomial(rho, 2 * qnum.l + 1, qnum.n - qnum.l - 1) *
-                            legendre_polynomial(qnum.m, qnum.l, cos(phi_p[k]));
-
-                        complex_t e_im_theta{ cos(qnum.m * theta_p[j]), sin(qnum.m * theta_p[j]) };
-
-                        psi[i][j][k] = e_im_theta * beta;
+                        psi[i][j][k] = qs.PSI(rho, theta_p[j], phi_p[k]);
                     }
                 }
             }
@@ -458,7 +406,7 @@ namespace HydrogenOrbitals
             myfile_phi_2_im.close();
         }
 
-        void verify_solution(PhysicalParameters params, QuantumNumbers qnum)
+        void verify_solution(const PhysicalParameters& params, const QuantumState& qs)
         {
             Array3d<complex_t> ratio(dd);
 
@@ -466,7 +414,7 @@ namespace HydrogenOrbitals
             numeral_t dtheta = 2.0 * M_PI / dd.n_theta;
             numeral_t dphi = M_PI / (dd.n_phi - 1);
             numeral_t alpha = params.h / (2.0 * params.mp);
-            numeral_t E = params.ke / (qnum.n * qnum.n);
+            numeral_t E = params.ke / (qs.n * qs.n);
 
             for (std::size_t i = 1; i < dd.n_r - 1; ++i)
             {

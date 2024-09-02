@@ -5,12 +5,13 @@
  *      Author: d-w-h
  */
 
-#include "DomainData.hpp"
-#include "QuantumNumbers.hpp"
-#include "PhysicalParameters.hpp"
-#include "SolutionData.hpp"
 #include <ios>
 #include <iostream>
+
+#include "DomainData.hpp"
+#include "PhysicalParameters.hpp"
+#include "QuantumState.hpp"
+#include "SolutionData.hpp"
 
 using namespace HydrogenOrbitals;
 
@@ -24,7 +25,7 @@ int main()
         40.0    // length of domain
     };
 
-    QuantumNumbers qn
+    QuantumState qn
     {
         4,  // n - principal quantum number
         2,  // l - azimuthal number
