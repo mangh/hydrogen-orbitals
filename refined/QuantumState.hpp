@@ -1,6 +1,7 @@
 #ifndef QUANTUM_NUMBERS_HPP
 #define QUANTUM_NUMBERS_HPP
 
+#include <cmath>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -33,12 +34,12 @@ namespace HydrogenOrbitals
         ///
 
         /// @brief Principal quantum number (represents the electron's energy level and relative size of the orbital).
-        /// @pre: 1 <= n.
-        const int n;
+        /// @pre: 0 < n.
+        const unsigned n;
 
         /// @brief Azimuthal quantum number (relates to the shape of the atomic orbital).
-        /// @pre: 0 <= l <= n-1.
-        const int l;
+        /// @pre: 0 <= l < n.
+        const unsigned l;
 
         /// @brief Magnetic quantum number (specifies the orientation of the orbital in space).
         /// @pre: -l <= m <= l.
@@ -71,7 +72,7 @@ namespace HydrogenOrbitals
          * @remarks Data used in Derek's (original) version: n = 4, l = 2, m = 1.
          *
          */
-        QuantumState(int n, int l, int m, double s = HALFSPIN)
+        QuantumState(unsigned n, unsigned l, int m, double s = HALFSPIN)
             : n(n)
             , l(l)
             , m(m)
@@ -80,19 +81,16 @@ namespace HydrogenOrbitals
             check(n, l, m, s);
         }
 
-        static bool permissible(int n, int l, int m, double s)
+        static bool permissible(unsigned n, unsigned l, int m, double s)
         {
-            return (1 <= n) &&
-                   (0 <= l) && (l <= n - 1) &&
-                   (-l <= m) && (m <= l) &&
-                   ((s == HALFSPIN) || (s == -HALFSPIN));
+            return (0 < n) && (l < n) && (static_cast<unsigned>(abs(m)) <= l) && ((s == HALFSPIN) || (s == -HALFSPIN));
         }
 
-        static void check(int n, int l, int m, double s)
+        static void check(unsigned n, unsigned l, int m, double s)
         {
             if (!permissible(n, l, m, s))
             {
-                const char* format = "Invalid quantum numbers :: n = %d :: l = %d :: m = %d :: s = %f";
+                const char* format = "Invalid quantum numbers :: n = %u :: l = %u :: m = %d :: s = %f";
                 std::size_t len = std::snprintf(nullptr, 0, format, n, l, m, s);
                 std::vector<char> buf(len + 1);
                 std::snprintf(&buf[0], buf.size(), format, n, l, m, s);
@@ -119,8 +117,10 @@ namespace HydrogenOrbitals
         {
             return exp(-rho / 2.0)
                  * pow(rho, l)
-                 * Ln(rho, 2 * l + 1, n - l - 1)
-                 * Pml(m, l, cos(phi))
+                 * Ln(n - l - 1, 2 * l + 1, rho)
+                //  * -std::assoc_laguerre(n - l - 1, 2 * l + 1, rho)
+                 * Pnm(l, m, cos(phi))
+                //  * std::assoc_legendre(l, m, cos(phi))
                  * complex_t{ cos(m * theta), sin(m * theta) };
         }
     };
