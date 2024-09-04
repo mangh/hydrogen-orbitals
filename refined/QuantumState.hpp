@@ -7,13 +7,11 @@
 #include <vector>
 
 #include "Numeral.hpp"
-#include "SpecialPolynomial.hpp"
 
 namespace HydrogenOrbitals
 {
     using std::invalid_argument;
     using std::to_string;
-    using namespace SpecialPolynomial;
 
     /**
      * @brief Quantum numbers.
@@ -117,10 +115,8 @@ namespace HydrogenOrbitals
         {
             return exp(-rho / 2.0)
                  * pow(rho, l)
-                 * Ln(n - l - 1, 2 * l + 1, rho)
-                //  * -std::assoc_laguerre(n - l - 1, 2 * l + 1, rho)
-                 * Pnm(l, m, cos(phi))
-                //  * std::assoc_legendre(l, m, cos(phi))
+                 * pow(-1, m) * std::assoc_laguerre(n - l - 1, 2 * l + 1, rho)
+                 * std::assoc_legendre(l, m, cos(phi))
                  * complex_t{ cos(m * theta), sin(m * theta) };
         }
     };
