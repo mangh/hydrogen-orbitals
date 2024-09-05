@@ -7,11 +7,13 @@
 #include <vector>
 
 #include "Numeral.hpp"
+#include "SpecialPolynomial.hpp"
 
 namespace HydrogenOrbitals
 {
     using std::invalid_argument;
     using std::to_string;
+    using namespace SpecialPolynomial;
 
     /**
      * @brief Quantum numbers.
@@ -104,19 +106,24 @@ namespace HydrogenOrbitals
         /**
          * @brief Wave function Ψ (non-normalized).
          *
-         * @param rho - radius ρ = 2 ∙ r / (n ∙ a0),
+         * @param rho - radius ρ = 2 * r / (n * a0),
          * @param theta - azimuthal angle θ (the angle in the xy-plane from the x-axis with 0 ≤ θ < 2π),
          * @param phi - polar angle ϕ (the angle from the positive z-axis with 0 ≤ ϕ ≤ π),
          *
-         * @remarks Ψ[n,l,m](ρ,θ,ϕ) = C ∙ e^(-ρ/2) ∙ ρ^l ∙ L[n-l-1,2l+1](ρ) ∙ e^imθ ∙ P[l,m](cos⁡ ϕ)
+         * @remarks Ψ[n,l,m](ρ,θ,ϕ) = C * e^(-ρ/2) * ρ^l * L[n-l-1,2l+1](ρ) * e^imθ * P[l,m](cos⁡ ϕ)
          *
          */
         complex_t PSI(numeral_t rho, numeral_t theta, numeral_t phi) const
         {
+            // return exp(-rho / 2.0)
+            //      * pow(rho, l)
+            //      * pow(-1, m) * std::assoc_laguerre(n - l - 1, 2 * l + 1, rho)
+            //      * std::assoc_legendre(l, m, cos(phi))
+            //      * complex_t{ cos(m * theta), sin(m * theta) };
             return exp(-rho / 2.0)
                  * pow(rho, l)
-                 * pow(-1, m) * std::assoc_laguerre(n - l - 1, 2 * l + 1, rho)
-                 * std::assoc_legendre(l, m, cos(phi))
+                 * assoc_laguerre(n - l - 1, 2 * l + 1, rho)
+                 * assoc_legendre(l, m, cos(phi))
                  * complex_t{ cos(m * theta), sin(m * theta) };
         }
     };
