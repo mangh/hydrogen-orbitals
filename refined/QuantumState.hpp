@@ -120,10 +120,17 @@ namespace HydrogenOrbitals
             //      * pow(-1, m) * std::assoc_laguerre(n - l - 1, 2 * l + 1, rho)
             //      * std::assoc_legendre(l, m, cos(phi))
             //      * complex_t{ cos(m * theta), sin(m * theta) };
+
+            // return exp(-rho / 2.0)
+            //      * pow(rho, l)
+            //      * assoc_laguerre(n - l - 1, 2 * l + 1, rho)
+            //      * assoc_legendre(l, m, cos(phi))
+            //      * complex_t{ cos(m * theta), sin(m * theta) };
+
             return exp(-rho / 2.0)
                  * pow(rho, l)
                  * assoc_laguerre(n - l - 1, 2 * l + 1, rho)
-                 * assoc_legendre(l, m, cos(phi))
+                 * plgndr(l, m, cos(phi))
                  * complex_t{ cos(m * theta), sin(m * theta) };
         }
     };

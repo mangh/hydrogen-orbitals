@@ -4,6 +4,7 @@
 #include <cassert>
 #include <cmath>
 #include <type_traits>
+#include <stdexcept>
 
 namespace SpecialPolynomial
 {
@@ -15,11 +16,31 @@ namespace SpecialPolynomial
      * @returns Factorial value i.e. n!
      */
     template<typename T>
-    T factorial(T n)
+    T factorial(size_t n)
     {
         static_assert(std::is_floating_point<T>::value, "factorial(n) requires a floating-point type parameter.");
         return std::exp(std::lgamma(n + 1));
     }
+
+    // constexpr inline size_t binom(size_t n, size_t k) noexcept
+    // {
+    //     return
+    //         /* out of range? */ (k > n) ? 0 :           
+    //         /* edge? */         (k == 0 || k == n) ? 1 :
+    //         /* first? */        (k == 1 || k == n-1) ? n :
+    //         /* recursive */     (k + k < n) ?
+    //                                 (binom(n - 1, k - 1) * n) / k : // path to k = 1 is faster
+    //                                 (binom(n - 1, k) * n) / (n - k);    // path to k = n-1 is faster
+    // }
+
+    // constexpr inline size_t binom2(size_t n, size_t k) noexcept
+    // {
+    //     return
+    //         (k > n) ? 0 :
+    //         (k == 0 || k == n) ? 1 :
+    //         (k == 1 || k == n - 1) ? n :
+    //             binom(n - 1, k - 1) * n / k;
+    // }
 
     /**
      * @brief Binomial coefficient "n choose k" (n/k).
@@ -28,10 +49,13 @@ namespace SpecialPolynomial
      * @param k - denominator argument.
      * @returns The coefficient (n/k) in the expansion of the polynomial (x+y)^n.
      * 
-     * @remarks https://stackoverflow.com/questions/44718971/calculate-binomial-coffeficient-very-reliably
+     * @remarks See:
+     * https://en.wikipedia.org/wiki/Binomial_coefficient
+     * https://stackoverflow.com/questions/44718971/calculate-binomial-coffeficient-very-reliably
+     * 
      */
     template<typename T>
-    T binom(T n, T k)
+    T binom(size_t n, size_t k)
     {
         static_assert(std::is_floating_point<T>::value, "binom(n, k) requires a floating-point type parameters.");
         return std::exp(
@@ -73,8 +97,8 @@ namespace SpecialPolynomial
             //        / factorial(n - 2 * k);
             total += pow(-1, k)
                    * pow(x, n - 2 * k)
-                   * binom(static_cast<double>(n), static_cast<double>(k))
-                   * binom(static_cast<double>(2 * n - 2 * k), static_cast<double>(n));
+                   * binom<double>(n, k)
+                   * binom<double>(2 * n - 2 * k, n);
         }
         return total / pow(2.0, n);
     }
@@ -106,8 +130,8 @@ namespace SpecialPolynomial
          return(m >= 0) ?
              pow(-1, m) * pow(1.0 - x * x, m / 2.0) * dm_Pl_dxm(x, m, n) :
              pow(-1, (-m))
-                * factorial(static_cast<double>(n - (-m)))
-                / factorial(static_cast<double>(n + (-m)))
+                * factorial<double>(n - (-m))
+                / factorial<double>(n + (-m))
                 * assoc_legendre(n, (-m), x);
     }
 
@@ -139,6 +163,101 @@ namespace SpecialPolynomial
                 * assoc_laguerre(n - 1, a, x) - (n - 1 + a)
                 * assoc_laguerre(n - 2, a, x)) / n;
     }
+
+    /**
+     * @brief Renormalized associated Legendre polynomial Pml(x)
+     * 
+     * @param l 
+     * @param m 
+     * @param x 
+     * @returns double 
+     * 
+     * @pre 0 <= m <= l
+     * @pre -1 <= x <= 1
+     * 
+     * @remark See: Numerical Recipes in C++. 6.7. Spherical Harmonics
+     * 
+     */
+    template<typename T>
+    T plegendre(int l, int m, T x)
+    {
+        static constexpr double PI = 3.141592653589793238462643383279502884L;
+
+        if (m < 0 || m > l || abs(x) > 1.0)
+            throw std::invalid_argument("plegendre: bad arguments.");
+
+        double pmm = 1.0;
+        if (m > 0)
+        {
+            double omx2 = (1.0 - x) * (1.0 + x);
+            double fact = 1.0;
+            for (int i = 1; i <= m; i++)
+            {
+                pmm *= omx2 * fact / (fact + 1.0);
+                fact += 2.0;
+            }
+        }
+        
+        pmm = sqrt((2 * m + 1) * pmm / (4.0 * PI));
+
+        if (m & 1)
+            pmm = -pmm;
+
+        if (l == m)
+            return pmm;
+        else
+        {
+            double pmmp1 = x * sqrt(2.0 * m + 3.0) * pmm;
+            if (l == m+1)
+                return pmmp1;
+            else
+            {
+                double oldfact = sqrt(2.0 * m + 3.0);
+                double pll = 0.0;   // ????
+                for (int ll = m + 2; ll <= l; ll++)
+                {
+                    double fact = sqrt((4.0 * ll * ll - 1.0) / (ll * ll - m * m));
+                    pll = (x * pmmp1 - pmm / oldfact) * fact;
+                    oldfact = fact;
+                    pmm = pmmp1;
+                    pmmp1 = pll;
+                }
+                return pll;
+            }
+        }
+    }
+
+    /**
+     * @brief Associated Legendre polynomial Pml(x) with standard normalization.
+     * 
+     * @param l 
+     * @param m 
+     * @param x 
+     * @returns double 
+     * 
+     * @pre 0 <= m <= l
+     * @pre -1 <= x <= 1
+     * 
+     * @remarks Overflow for m >= 80, or even sooner if l >> m.
+     * @remarks See: Numerical Recipes in C++. 6.7. Spherical Harmonics
+     * 
+     */
+    template<typename T>
+    T plgndr(int l, int m, T x)
+    {
+        static constexpr double PI = 3.141592653589793238462643383279502884L;
+
+        if (m < 0 || m > l || abs(x) > 1.0)
+            throw std::invalid_argument("plgndr: bad arguments.");
+
+        double prod = 1.0;
+        for (int j = l - m + 1; j <= l + m; j++)
+        {
+            prod *= j;
+        } 
+        return sqrt(4.0 * PI * prod / (2 * l + 1)) * plegendre(l,m,x);
+    }
+
 }
 
 #endif /* !SPECIAL_POLYNOMIALS_HPP */
