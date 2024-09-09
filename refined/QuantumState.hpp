@@ -115,23 +115,21 @@ namespace HydrogenOrbitals
          */
         complex_t PSI(numeral_t rho, numeral_t theta, numeral_t phi) const
         {
-            // return exp(-rho / 2.0)
-            //      * pow(rho, l)
-            //      * pow(-1, m) * std::assoc_laguerre(n - l - 1, 2 * l + 1, rho)
-            //      * std::assoc_legendre(l, m, cos(phi))
-            //      * complex_t{ cos(m * theta), sin(m * theta) };
+            unsigned mm = (m < 0) ? -m : m;
 
-            // return exp(-rho / 2.0)
+            // auto psi = exp(-rho / 2.0)
             //      * pow(rho, l)
-            //      * assoc_laguerre(n - l - 1, 2 * l + 1, rho)
-            //      * assoc_legendre(l, m, cos(phi))
-            //      * complex_t{ cos(m * theta), sin(m * theta) };
+            //      * pow(-1, mm) * std::assoc_laguerre(n - l - 1, 2 * l + 1, rho)
+            //      * std::assoc_legendre(l, mm, cos(phi))
+            //      * complex_t{ cos(mm * theta), sin(mm * theta) };
 
-            return exp(-rho / 2.0)
+            auto psi = exp(-rho / 2.0)
                  * pow(rho, l)
                  * assoc_laguerre(n - l - 1, 2 * l + 1, rho)
-                 * plgndr(l, m, cos(phi))
-                 * complex_t{ cos(m * theta), sin(m * theta) };
+                 * assoc_legendre_normalized(l, mm, cos(phi))
+                 * complex_t{ cos(mm * theta), sin(mm * theta) };
+
+            return (m >= 0) ? psi : (mm & 1) ? -conj(psi) : conj(psi);
         }
     };
 }
