@@ -104,32 +104,54 @@ namespace HydrogenOrbitals
         ///
 
         /**
-         * @brief Wave function Ψ (non-normalized).
-         *
-         * @param rho - radius ρ = 2 * r / (n * a0),
+         * @brief Radial part Rn,l(r) of the wave function.
+         * @details Rn,l(ρ) = e^(-ρ) * (2ρ)^l * L[n-l-1,2l+1](2ρ).
+         * 
+         * @param rho - normalized radial distance from the nucleus: ρ = r / (n * a0).
+         * @returns The value of the radial function Rn,l(ρ).
+         */
+        numeral_t Radial(numeral_t rho) const
+        {
+            return
+                exp(-rho) *
+                pow(2 * rho, l) * 
+                assoc_laguerre(n - l - 1, 2 * l + 1, 2 * rho);
+        }
+
+        /**
+         * @brief Angular part (spherical harmonics) Yl,m(θ,φ) of the wave function.
+         * @details Yl,m(θ,φ) = Pl,m(cos⁡ ϕ) * e^imθ.
+         * 
          * @param theta - azimuthal angle θ (the angle in the xy-plane from the x-axis with 0 ≤ θ < 2π),
          * @param phi - polar angle ϕ (the angle from the positive z-axis with 0 ≤ ϕ ≤ π),
-         *
-         * @remarks Ψ[n,l,m](ρ,θ,ϕ) = C * e^(-ρ/2) * ρ^l * L[n-l-1,2l+1](ρ) * e^imθ * P[l,m](cos⁡ ϕ)
+         * @returns The value of the spherical harmonic Yl,m(θ,φ).
          *
          */
-        complex_t PSI(numeral_t rho, numeral_t theta, numeral_t phi) const
+        complex_t Angular(numeral_t theta, numeral_t phi) const
         {
             unsigned mm = (m < 0) ? -m : m;
 
-            // auto psi = exp(-rho / 2.0)
-            //      * pow(rho, l)
-            //      * pow(-1, mm) * std::assoc_laguerre(n - l - 1, 2 * l + 1, rho)
-            //      * std::assoc_legendre(l, mm, cos(phi))
-            //      * complex_t{ cos(mm * theta), sin(mm * theta) };
+            complex_t ylm = 
+                assoc_legendre_normalized(l, mm, cos(phi)) *
+                complex_t{ cos(mm * theta), sin(mm * theta) };
 
-            auto psi = exp(-rho / 2.0)
-                 * pow(rho, l)
-                 * assoc_laguerre(n - l - 1, 2 * l + 1, rho)
-                 * assoc_legendre_normalized(l, mm, cos(phi))
-                 * complex_t{ cos(mm * theta), sin(mm * theta) };
+            return (m >= 0) ? ylm : (mm & 1) ? -conj(ylm) : conj(ylm);
+        }
 
-            return (m >= 0) ? psi : (mm & 1) ? -conj(psi) : conj(psi);
+        /**
+         * @brief Wave function Ψn,l,m (non-normalized).
+         * @details Ψn,l,m(ρ,θ,ϕ) = Rn,l(ρ) * Yl,m(θ, ϕ).
+         *
+         * @param rho - normalized radial distance from the nucleus: ρ = r / (n * a0).
+         * @param theta - azimuthal angle θ (the angle in the xy-plane from the x-axis with 0 ≤ θ < 2π),
+         * @param phi - polar angle ϕ (the angle from the positive z-axis with 0 ≤ ϕ ≤ π),
+         *
+         * @returns The value of the wave function Ψn,l,m(ρ,θ,ϕ).
+         *
+         */
+        complex_t WaveFunction(numeral_t rho, numeral_t theta, numeral_t phi) const
+        {
+            return Radial(rho) * Angular(theta, phi);
         }
     };
 }

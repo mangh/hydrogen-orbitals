@@ -121,14 +121,14 @@ namespace HydrogenOrbitals
 
             for (std::size_t i = 1; i < dd.n_r; ++i)
             {
-                // ρ = 2∙r / (n∙a0)
-                numeral_t rho = 2.0 * r_p[i] / (qs.n * param.a0);
+                // normalized radial distance from the nucleus: ρ = 2 * r / (n * a0):
+                numeral_t rho = r_p[i] / (qs.n * param.a0);
 
                 for (std::size_t j = 0; j < dd.n_theta; ++j)
                 {
                     for (std::size_t k = 0; k < dd.n_phi; ++k)
                     {
-                        psi[i][j][k] = qs.PSI(rho, theta_p[j], phi_p[k]);
+                        psi[i][j][k] = qs.WaveFunction(rho, theta_p[j], phi_p[k]);
                     }
                 }
             }
@@ -172,6 +172,9 @@ namespace HydrogenOrbitals
                 integral += psi_sq;
             }
 
+            auto integral_sqrt = sqrt(integral);
+            // auto integral_sqrt = integral / integral;
+
             /* Normalize */
             for (std::size_t i = 1; i < dd.n_r; ++i)
             {
@@ -179,7 +182,7 @@ namespace HydrogenOrbitals
                 {
                     for (std::size_t k = 0; k < dd.n_phi; ++k)
                     {
-                        psi[i][j][k] /= sqrt(integral);
+                        psi[i][j][k] /= integral_sqrt;  // sqrt(integral);
                     }
                 }
             }
