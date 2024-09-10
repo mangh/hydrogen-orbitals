@@ -18,17 +18,17 @@ namespace SpecialPolynomial
      * @param a - the order of the polynomial,
      * @param x - the argument.
      * @returns T 
-     * 
+     *
      * @remarks Recursive definition (https://en.wikipedia.org/wiki/Laguerre_polynomials):
-     *      
+     * 
      * L[0][a](x) = 1
-     * L[1][a](x) = 1 + a -x
-     *                (2k+1+a-x)∙L[n][a] - (k+a)∙L[n-1][a]
-     * L[n+1][a](x) = ------------------------------------
-     *                                n + 1
+     * 
+     * L[1][a](x) = 1 + a - x
+     * 
+     * L[k+1][a](x) = ((2k+1+a-x) * L[k][a](x) - (k+a) * L[k-1][a](x)) / (k + 1).
      */
     template<typename T>
-    T assoc_laguerre(unsigned n, int a, T x)
+    T assoc_laguerre(unsigned n, unsigned a, T x)
     {
         static_assert(std::is_floating_point<T>::value, "Associated Laguerre polynomial requires a floating-point type parameter x.");
         return
@@ -40,10 +40,9 @@ namespace SpecialPolynomial
     }
 
     /**
-     * @brief Renormalized associated Legendre polynomial ~Pm,l(x).
+     * @brief Associated Legendre polynomial for use with spherical harmonics.
      * 
-     * @details Computes renormalized (for better convergence) associated Legendre polynomial.
-     * See: Numerical Recipes in C++, 6.7. Spherical Harmonics, equation (6.7.8).
+     * @details Computes the associated Legendre polynomial ~Pm,l(x) prenormalized for orthonormal spherical harmonics Yl,m.
      * 
      * @param l - the degree of the polynomial,
      * @param m - the order of the polynomial,
@@ -55,16 +54,22 @@ namespace SpecialPolynomial
      * @pre 0 <= m <= l
      * @pre -1 <= x <= 1
      * 
+     * @remarks See: Numerical Recipes in C++, 6.7. Spherical Harmonics, equation (6.7.8), algorithm "plegendre".
+     * The square root factor used in equation (6.7.2) makes the resulting polynomial ~Pl,m well suited for spherical harmonics,
+     * but, importantly, it also prevents the algorithm from diverging too early.
+     * 
      */
     template<typename T>
-    T assoc_legendre_normalized(unsigned l, unsigned m, T x)
+    T assoc_legendre_ylm(unsigned l, unsigned m, T x)
     {
         static_assert(std::is_floating_point<T>::value,
-            "assoc_legendre_normalized() requires a floating-point type parameter x."
+            "assoc_legendre_ylm() requires a floating-point type parameter x."
         );
 
-        if (m > l || std::abs(x) > 1.0)
-            throw std::invalid_argument("assoc_legendre_normalized: bad arguments.");
+        if (m > l)
+            throw std::invalid_argument("assoc_legendre_ylm(l,m,x): bad l, m arguments. Should be: m <= l, and is: m > l.");
+        if ((x < -1) || (x > 1))
+            throw std::invalid_argument("assoc_legendre_ylm(l,m,x): bad argument x. Should be: -1 <= x <= 1, but it is not.");
 
         // compute ~Pm,m
         T Pmm = 1.0;
@@ -108,7 +113,6 @@ namespace SpecialPolynomial
 
     /**
      * @brief Associated Legendre polynomial Pm,l(x).
-     * See: Numerical Recipes in C++, 6.7. Spherical Harmonics, equation (6.7.4).
      * 
      * @param l - the degree of the polynomial,
      * @param m - the order of the polynomial,
@@ -119,21 +123,24 @@ namespace SpecialPolynomial
      * @pre 0 <= m <= l
      * @pre -1 <= x <= 1
      * 
-     * @remarks The function may overflow for m >= 80, or even sooner if l >> m.
+     * @remarks See: Numerical Recipes in C++, 6.7. Spherical Harmonics, equation (6.7.4), algorithm "plgndr".
+     * The function may overflow for m >= 80, or even sooner if l >> m.
      * 
      */
     template<typename T>
     T assoc_legendre(unsigned l, unsigned m, T x)
     {
-        if (m > l || std::abs(x) > 1.0)
-            throw std::invalid_argument("assoc_legendre: bad arguments.");
+        if (m > l)
+            throw std::invalid_argument("assoc_legendre(l,m,x): bad l, m arguments. Should be: m <= l, and is: m > l.");
+        if ((x < -1) || (x > 1))
+            throw std::invalid_argument("assoc_legendre(l,m,x): bad argument x. Should be: -1 <= x <= 1, but it is not.");
 
         T prod = 1.0;
         for (unsigned j = l - m + 1; j <= l + m; j++)
         {
             prod *= j;
         } 
-        return std::sqrt(4.0 * PI * prod / (2 * l + 1)) * assoc_legendre_normalized(l,m,x);
+        return std::sqrt(4.0 * PI * prod / (2 * l + 1)) * assoc_legendre_ylm(l,m,x);
     }
 }
 

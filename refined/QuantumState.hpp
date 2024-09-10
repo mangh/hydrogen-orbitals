@@ -132,7 +132,7 @@ namespace HydrogenOrbitals
             unsigned mm = (m < 0) ? -m : m;
 
             complex_t ylm = 
-                assoc_legendre_normalized(l, mm, cos(phi)) *
+                assoc_legendre_ylm(l, mm, cos(phi)) *
                 complex_t{ cos(mm * theta), sin(mm * theta) };
 
             return (m >= 0) ? ylm : (mm & 1) ? -conj(ylm) : conj(ylm);
