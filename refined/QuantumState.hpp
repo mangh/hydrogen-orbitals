@@ -104,18 +104,36 @@ namespace HydrogenOrbitals
         ///
 
         /**
-         * @brief Radial part Rn,l(r) of the wave function.
+         * @brief Normalizing factor for the radial part (Rnl) of the wave function in the (n,l) state.
+         * 
+         * @param n - principal quantum number,
+         * @param l - azimutha quantum number,
+         * @param a0 - Bohr radius
+         * @returns numeral_t 
+         */
+        static numeral_t Rnl_normalizing_factor(unsigned n, unsigned l, numeral_t a0)
+        {
+            return std::sqrt(
+                std::pow(2.0 / n / a0, 3) *
+                fact<numeral_t>(n - l - 1) /
+                2.0 / n / fact<numeral_t>(n + l)
+            );
+        }
+
+        /**
+         * @brief Radial part Rn,l(r) of the wave function (not ortho-normalized).
          * @details Rn,l(ρ) = e^(-ρ) * (2ρ)^l * L[n-l-1,2l+1](2ρ).
          * 
          * @param rho - normalized radial distance from the nucleus: ρ = r / (n * a0).
+         * @param rho - normalized radial distance from the nucleus: ρ = r / a0.
          * @returns The value of the radial function Rn,l(ρ).
          */
-        numeral_t Radial(numeral_t rho) const
+        numeral_t Rnl(numeral_t rho) const
         {
             return
-                exp(-rho) *
-                pow(2 * rho, l) * 
-                assoc_laguerre(n - l - 1, 2 * l + 1, 2 * rho);
+                exp(-rho / n) *
+                pow(2 * rho / n, l) * 
+                assoc_laguerre(n - l - 1, 2 * l + 1, 2 * rho / n);
         }
 
         /**
@@ -127,12 +145,11 @@ namespace HydrogenOrbitals
          * @returns The value of the spherical harmonic Yl,m(θ,φ).
          *
          */
-        complex_t Angular(numeral_t theta, numeral_t phi) const
+        complex_t Ylm(numeral_t theta, numeral_t phi) const
         {
             unsigned mm = (m < 0) ? -m : m;
 
-            complex_t ylm = 
-                assoc_legendre_ylm(l, mm, cos(phi)) *
+            complex_t ylm = ylm_assoc_legendre(l, mm, cos(phi)) *
                 complex_t{ cos(mm * theta), sin(mm * theta) };
 
             return (m >= 0) ? ylm : (mm & 1) ? -conj(ylm) : conj(ylm);
@@ -151,7 +168,7 @@ namespace HydrogenOrbitals
          */
         complex_t WaveFunction(numeral_t rho, numeral_t theta, numeral_t phi) const
         {
-            return Radial(rho) * Angular(theta, phi);
+            return Rnl_normalizing_factor(n, l, 1.0) * Rnl(rho) * Ylm(theta, phi);
         }
     };
 }
