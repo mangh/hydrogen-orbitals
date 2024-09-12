@@ -59,6 +59,9 @@ namespace HydrogenOrbitals
         /// @brief brief description
         numeral_t error;
 
+        // Normalizing factor
+        numeral_t integral;
+
         ///////////////////////////////////////////////////////////////////
         ///
         ///     Constructor(s)
@@ -122,7 +125,8 @@ namespace HydrogenOrbitals
             for (std::size_t i = 1; i < dd.n_r; ++i)
             {
                 // normalized radial distance from the nucleus: ρ = 2 * r / (n * a0):
-                numeral_t rho = r_p[i] / (qs.n * param.a0);
+                // numeral_t rho = r_p[i] / (qs.n * param.a0);
+                numeral_t rho = r_p[i] / param.a0;
 
                 for (std::size_t j = 0; j < dd.n_theta; ++j)
                 {
@@ -136,7 +140,8 @@ namespace HydrogenOrbitals
 
         void normalize_psi()
         {
-            numeral_t integral{ 0.0 };
+            // numeral_t integral{ 0.0 };
+            integral = 0.0;
 
             numeral_t dr = dd.R / dd.n_r;
             numeral_t dtheta = 2.0 * M_PI / dd.n_theta;

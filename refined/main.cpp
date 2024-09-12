@@ -91,5 +91,8 @@ int main()
             ;
     }
 
-    std::cout << "error in percentage : " << std::fixed << sd.error << std::endl;
+    std::cout
+        << std::fixed
+        << "error in percentage : " << sd.error << std::endl
+        << "normalization constant : " << std::sqrt(sd.integral) << std::endl;
 }
