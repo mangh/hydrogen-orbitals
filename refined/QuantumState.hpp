@@ -81,14 +81,14 @@ namespace HydrogenOrbitals
             check(n, l, m, s);
         }
 
-        static bool permissible(unsigned n, unsigned l, int m, double s)
+        static bool is_permissible(unsigned n, unsigned l, int m, double s)
         {
             return (0 < n) && (l < n) && (static_cast<unsigned>(abs(m)) <= l) && ((s == HALFSPIN) || (s == -HALFSPIN));
         }
 
         static void check(unsigned n, unsigned l, int m, double s)
         {
-            if (!permissible(n, l, m, s))
+            if (!is_permissible(n, l, m, s))
             {
                 const char* format = "Invalid quantum numbers :: n = %u :: l = %u :: m = %d :: s = %f";
                 std::size_t len = std::snprintf(nullptr, 0, format, n, l, m, s);
