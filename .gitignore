@@ -1,6 +1,9 @@
 .vs/
+boost/
 build/
+doc/
+log/
 out/
 original/results/
 refined/results/
-log/
+refined/results - Copy/
