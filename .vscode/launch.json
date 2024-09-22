@@ -11,6 +11,15 @@
             "program": "${workspaceFolder}/build/refined/refined.exe",
             "args": [],
             "cwd": "${workspaceFolder}/refined/results"
+        },
+        {
+            "name": "Visualize",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/refined/visualize_data.py",
+            "console": "integratedTerminal",
+            "args": [],
+            "cwd": "${workspaceFolder}/refined/results"
         }
     ]
 }
