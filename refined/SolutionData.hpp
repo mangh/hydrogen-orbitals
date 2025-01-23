@@ -82,7 +82,8 @@ namespace HydrogenOrbitals
             , r(dd.n_r)
             , r_p(dd.n_r)
             , theta_p(dd.n_theta)
-            , phi(dd.n_phi - 1)  // NOTE: n_phi - 1 !!!!!!!!!!!!!!!! Why?
+            //, phi(dd.n_phi - 1)  // NOTE: n_phi - 1 !!!!!!!!!!!!!!!! Why?
+            , phi(dd.n_phi)
             , phi_p(dd.n_phi)
             , psi(dd)
             , psi_square(dd)
@@ -97,11 +98,14 @@ namespace HydrogenOrbitals
             // theta_p vector
             for (std::size_t i = 0; i < dd.n_theta; ++i) { theta_p[i] = i * dtheta + 0.5 * dtheta; }
 
-            // phi vector
-            for (std::size_t i = 0; i < dd.n_phi - 1; ++i) { phi[i] = i * dphi + 0.5 * dphi; }
+            //// phi vector
+            //for (std::size_t i = 0; i < dd.n_phi - 1; ++i) { phi[i] = i * dphi + 0.5 * dphi; }
 
-            // phi_p vector
-            for (std::size_t i = 0; i < dd.n_phi; ++i) { phi_p[i] = i * dphi; }
+            //// phi_p vector
+            //for (std::size_t i = 0; i < dd.n_phi; ++i) { phi_p[i] = i * dphi; }
+
+            // phi & phi_p vector
+            for (std::size_t i = 0; i < dd.n_phi; ++i) { phi_p[i] = i * dphi; phi[i] = i * dphi + 0.5 * dphi; }
         }
 
         ///////////////////////////////////////////////////////////////////
@@ -111,18 +115,18 @@ namespace HydrogenOrbitals
 
         void compute_wave_function(const PhysicalParameters& param, const QuantumState& qs)
         {
-            for (std::size_t i = 0; i < 1; ++i)
-            {
-                for (std::size_t j = 0; j < dd.n_theta; ++j)
-                {
-                    for (std::size_t k = 0; k < dd.n_phi; ++k)
-                    {
-                        psi[i][j][k] = CZERO;
-                    }
-                }
-            }
+            // for (std::size_t i = 0; i < 1; ++i)
+            // {
+            //     for (std::size_t j = 0; j < dd.n_theta; ++j)
+            //     {
+            //         for (std::size_t k = 0; k < dd.n_phi; ++k)
+            //         {
+            //             psi[i][j][k] = CZERO;
+            //         }
+            //     }
+            // }
 
-            for (std::size_t i = 1; i < dd.n_r; ++i)
+            for (std::size_t i = 0 /* 1 */; i < dd.n_r; ++i)
             {
                 // normalized radial distance from the nucleus: ρ = 2 * r / (n * a0):
                 // numeral_t rho = r_p[i] / (qs.n * param.a0);
@@ -142,6 +146,7 @@ namespace HydrogenOrbitals
         {
             // numeral_t integral{ 0.0 };
             integral = 0.0;
+            numeral_t c = 0.0;
 
             numeral_t dr = dd.R / dd.n_r;
             numeral_t dtheta = 2.0 * M_PI / dd.n_theta;
@@ -151,8 +156,13 @@ namespace HydrogenOrbitals
             for (std::size_t i = 1; i < dd.n_r; ++i)
             {
                 numeral_t dV = 2.0 / 3.0 * M_PI * (1 - cos(dphi / 2)) * (r[i] * r[i] * r[i] - r[i - 1] * r[i - 1] * r[i - 1]);
-                numeral_t psi_sq = norm(psi[i][0][0]) * dV;
-                integral += psi_sq;
+                // numeral_t psi_sq = norm(psi[i][0][0]) * dV;
+                // integral += psi_sq;
+                
+                numeral_t psi_sq = norm(psi[i][0][0]) * dV - c;
+                double tmp = integral + psi_sq; 
+                c = (tmp - integral) - psi_sq;
+                integral = tmp;
             }
 
             /* Central nodes */
@@ -163,8 +173,13 @@ namespace HydrogenOrbitals
                     for (std::size_t k = 1; k < dd.n_phi - 1; ++k)
                     {
                         numeral_t dV = r_p[i] * r_p[i] * sin(phi_p[k]) * dphi * dtheta * dr;
-                        numeral_t psi_sq = norm(psi[i][j][k]) * dV;
-                        integral += psi_sq;
+                        // numeral_t psi_sq = norm(psi[i][j][k]) * dV;
+                        // integral += psi_sq;
+
+                        numeral_t psi_sq = norm(psi[i][j][k]) * dV - c;
+                        double tmp = integral + psi_sq;
+                        c = (tmp - integral) - psi_sq;
+                        integral = tmp;
                     }
                 }
             }
@@ -173,24 +188,29 @@ namespace HydrogenOrbitals
             for (std::size_t i = 1; i < dd.n_r; ++i)
             {
                 numeral_t dV = 2.0 / 3.0 * M_PI * (1 - cos(dphi / 2.0)) * (r[i] * r[i] * r[i] - r[i - 1] * r[i - 1] * r[i - 1]);
-                numeral_t psi_sq = norm(psi[i][0][dd.n_phi - 1]) * dV;
-                integral += psi_sq;
+                // numeral_t psi_sq = norm(psi[i][0][dd.n_phi - 1]) * dV;
+                // integral += psi_sq;
+
+                numeral_t psi_sq = norm(psi[i][0][dd.n_phi - 1]) * dV - c;
+                double tmp = integral + psi_sq;
+                c = (tmp - integral) - psi_sq;
+                integral = tmp;
             }
 
-            auto integral_sqrt = sqrt(integral);
-            // auto integral_sqrt = integral / integral;
+            // auto integral_sqrt = sqrt(integral);
+            // // auto integral_sqrt = integral / integral;
 
-            /* Normalize */
-            for (std::size_t i = 1; i < dd.n_r; ++i)
-            {
-                for (std::size_t j = 0; j < dd.n_theta; ++j)
-                {
-                    for (std::size_t k = 0; k < dd.n_phi; ++k)
-                    {
-                        psi[i][j][k] /= integral_sqrt;  // sqrt(integral);
-                    }
-                }
-            }
+            // /* Normalize */
+            // for (std::size_t i = 1; i < dd.n_r; ++i)
+            // {
+            //     for (std::size_t j = 0; j < dd.n_theta; ++j)
+            //     {
+            //         for (std::size_t k = 0; k < dd.n_phi; ++k)
+            //         {
+            //             psi[i][j][k] /= integral_sqrt;  // sqrt(integral);
+            //         }
+            //     }
+            // }
         }
 
         void compute_probability_density()
@@ -209,7 +229,8 @@ namespace HydrogenOrbitals
 
         numeral_t compute_max_pd()
         {
-            numeral_t max_pd = -1e+8;
+            //numeral_t max_pd = -1e+8;
+            numeral_t max_pd = std::numeric_limits<numeral_t>::min();
             for (std::size_t i = 0; i < dd.n_r; ++i)
             {
                 for (std::size_t j = 0; j < dd.n_theta; ++j)
@@ -228,7 +249,8 @@ namespace HydrogenOrbitals
 
         numeral_t compute_max_psi_real()
         {
-            numeral_t max_real = -1e+8;
+            //numeral_t max_real = -1e+8;
+            numeral_t max_real = std::numeric_limits<numeral_t>::min();
             for (std::size_t i = 0; i < dd.n_r; ++i)
             {
                 for (std::size_t j = 0; j < dd.n_theta; ++j)

@@ -69,7 +69,7 @@ namespace SpecialPolynomial
      * @param m - the order of the polynomial,
      * @param x - the argument.
      * 
-     * @returns The value of the associated Legendre polynomial ~Pm,l(x), however, normalized for use with spherical harmonics Yl,m.
+     * @returns The value of the associated Legendre polynomial ~Pm,l(x) normalized for use with spherical harmonics Yl,m.
      * 
      * @pre 0 <= m <= l
      * @pre -1 <= x <= 1

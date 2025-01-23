@@ -1,5 +1,5 @@
-#ifndef QUANTUM_NUMBERS_HPP
-#define QUANTUM_NUMBERS_HPP
+#ifndef QUANTUM_STATE_HPP
+#define QUANTUM_STATE_HPP
 
 #include <cmath>
 #include <stdexcept>
@@ -137,7 +137,7 @@ namespace HydrogenOrbitals
         }
 
         /**
-         * @brief Angular part (spherical harmonics) Yl,m(θ,φ) of the wave function.
+         * @brief Angular part Yl,m(θ,φ) of the wave function (spherical harmonics).
          * @details Yl,m(θ,φ) = Pl,m(cos⁡ ϕ) * e^imθ.
          * 
          * @param theta - azimuthal angle θ (the angle in the xy-plane from the x-axis with 0 ≤ θ < 2π),
@@ -156,14 +156,13 @@ namespace HydrogenOrbitals
         }
 
         /**
-         * @brief Wave function Ψn,l,m (non-normalized).
-         * @details Ψn,l,m(ρ,θ,ϕ) = Rn,l(ρ) * Yl,m(θ, ϕ).
+         * @brief Normalized wave function Ψn,l,m(ρ,θ,ϕ) = Rn,l(ρ) * Yl,m(θ, ϕ).
          *
          * @param rho - normalized radial distance from the nucleus: ρ = r / (n * a0).
          * @param theta - azimuthal angle θ (the angle in the xy-plane from the x-axis with 0 ≤ θ < 2π),
          * @param phi - polar angle ϕ (the angle from the positive z-axis with 0 ≤ ϕ ≤ π),
          *
-         * @returns The value of the wave function Ψn,l,m(ρ,θ,ϕ).
+         * @returns The value of the wave function.
          *
          */
         complex_t WaveFunction(numeral_t rho, numeral_t theta, numeral_t phi) const
@@ -173,4 +172,4 @@ namespace HydrogenOrbitals
     };
 }
 
-#endif /* !QUANTUM_NUMBERS_HPP */
+#endif /* !QUANTUM_STATE_HPP */
