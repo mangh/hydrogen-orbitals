@@ -108,8 +108,11 @@ cmake_path(SET ROOT_DIR "${PROJECT_SOURCE_DIR}")
 #   TARGETS to BUILD
 #
 
-# Original app (by derekharrison)
-add_subdirectory ("original")
+# # Original app (by derekharrison)
+# add_subdirectory ("original")
+
+# # Refined app (by mangh)
+# add_subdirectory ("refined")
 
 # Refined app (by mangh)
-add_subdirectory ("refined")
+add_subdirectory ("ultimate")
