@@ -6,15 +6,13 @@
 
 #include "cppfeatures.h"
 
-#include "DomainData.hpp"
-
 namespace HydrogenOrbitals
 {
     /**
-     * @brief 3-dimensional array of numbers (including complex numbers).
+     * @brief 3-dimensional array.
      * 
      */
-    template<typename T = numeral_t>
+    template<typename T>
     struct Array3d
     {
         ///////////////////////////////////////////////////////////////////
@@ -22,10 +20,10 @@ namespace HydrogenOrbitals
         ///     Properties
         ///
 
-        /// @brief Numeric (complex) data
+        /// @brief Data pages(each page consists of rows, and each row consists of columns).
         std::vector<
             std::vector<
-                std::vector<T>>> m_arry;
+                std::vector<T>>> m_page;
 
         ///////////////////////////////////////////////////////////////////
         ///
@@ -40,31 +38,22 @@ namespace HydrogenOrbitals
         /**
          * @brief Array3d constructor.
          * 
-         * @param size_i - the number of planes,
-         * @param size_j - the number of rows in a single plane,
-         * @param size_k - the number of columns in a single row.
+         * @param pages  - the number of pages,
+         * @param rows    - the number of rows (in a single page),
+         * @param columns - the number of columns (in a single row).
          * 
          */
-        Array3d(std::size_t size_i, std::size_t size_j, std::size_t size_k)
-            : m_arry(size_i)
+        Array3d(std::size_t pages, std::size_t rows, std::size_t columns)
+            : m_page(pages)
         {
-            for(std::size_t i = 0; i < size_i; ++i)
+            for(std::size_t p = 0; p < pages; ++p)
             {
-                m_arry[i] = std::vector<std::vector<T>>(size_j);
-                for(std::size_t j = 0; j < size_j; ++j)
+                m_page[p] = std::vector<std::vector<T>>(rows);
+                for(std::size_t r = 0; r < rows; ++r)
                 {
-                    m_arry[i][j] = std::vector<T>(size_k);
+                    m_page[p][r] = std::vector<T>(columns);
                 }
             }
-        }
-
-        /**
-         * @brief Array3d constructor.
-         * @param dd - Domain Data.
-         */
-        Array3d(const DomainData& dd)
-            : Array3d(dd.n_r, dd.n_theta, dd.n_phi)
-        {
         }
 
         ///////////////////////////////////////////////////////////////////
@@ -73,32 +62,54 @@ namespace HydrogenOrbitals
         ///
 
         /**
-         * @brief Array subscript operator
+         * @brief Array subscript operator (for reading).
          * 
-         * @param r 
-         * @returns constexpr std::vector<std::vector<complex_t
+         * @param p - page index. 
+         * @returns Data page (read-only) for the p-index.
          */
-        CONSTEXPR_SINCE_CXX20 std::vector<std::vector<T>>& operator[](std::size_t i) const
+        CONSTEXPR_SINCE_CXX20 std::vector<std::vector<T>>& operator[](std::size_t p) const
         {
-            assert(i < m_arry.size());
-            return m_arry[i];
+            assert(p < m_page.size());
+            return m_page[p];
         }
-        std::vector<std::vector<T>>& operator[](std::size_t i)
+        /**
+         * @brief Array subscript operator (for writing).
+         * 
+         * @param p - page index. 
+         * @returns Data page (for writing) for the p-index.
+         */
+        std::vector<std::vector<T>>& operator[](std::size_t p)
         {
-            assert(i < m_arry.size());
-            return m_arry[i];
+            assert(p < m_page.size());
+            return m_page[p];
         }
 
-        CONSTEXPR_SINCE_CXX20 T& operator()(std::size_t i, std::size_t j, std::size_t k) const
+        /**
+         * @brief Function-call operator to acces single data item (for reading).
+         * 
+         * @param p - page index,
+         * @param r - row index,
+         * @param c - column index.
+         * @returns Single data item (read-only) for the given indexes (p, r, c).
+         */
+        CONSTEXPR_SINCE_CXX20 T& operator()(std::size_t p, std::size_t r, std::size_t c) const
         {
-            assert(i < m_arry.size() && j < m_arry[i].size() && k < m_arry[i][j].size());
-            return m_arry[i][j][k];
+            assert(p < m_page.size() && r < m_page[p].size() && c < m_page[p][r].size());
+            return m_page[p][r][c];
         }
 
-        T& operator()(std::size_t i, std::size_t j, std::size_t k)
+        /**
+         * @brief Function-call operator to acces single data item (for writing).
+         * 
+         * @param p - page index,
+         * @param r - row index,
+         * @param c - column index.
+         * @returns Single data item (writable) for the given indexes (p, r, c).
+         */
+        T& operator()(std::size_t p, std::size_t r, std::size_t c)
         {
-            assert(i < m_arry.size() && j < m_arry[i].size() && k < m_arry[i][j].size());
-            return m_arry[i][j][k];
+            assert(p < m_page.size() && r < m_page[p].size() && c < m_page[p][r].size());
+            return m_page[p][r][c];
         }
     };
 }

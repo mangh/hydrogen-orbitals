@@ -1,93 +1,66 @@
 #ifndef LINSPACE_HPP
 #define LINSPACE_HPP
 
-// #include "Numeral.hpp"
 #include <vector>
 
 namespace HydrogenOrbitals
 {
-    /**
-    * @brief linspace vector
-    * 
-    */
-    template<typename T>
-    struct linspace : std::vector<T>
-    {
-        static_assert(std::is_arithmetic_v<T> == true);
+	/**
+	* @brief linspace (vector of evenly spaced points).
+	*
+	*/
+	template<typename T>
+	struct linspace : std::vector<T>
+	{
+		static_assert(std::is_arithmetic_v<T> == true);
 
-        ///////////////////////////////////////////////////////////////////
-        ///
-        ///     Properties
-        ///
+		///////////////////////////////////////////////////////////////////
+		///
+		///     Properties
+		///
 
-        // /// @brief Delta value.
-        // const T delta;
+		/// @brief Delta (step) value - the interval between consecutive points.
+		const T delta;
 
-        ///////////////////////////////////////////////////////////////////
-        ///
-        ///     Constructor(s)
-        ///
+		///////////////////////////////////////////////////////////////////
+		///
+		///     Constructor(s)
+		///
 
-        /**
-        * @brief No default constructor!
-        */
-        linspace() = delete;
+		/// @brief No default constructor!
+		linspace() = delete;
 
-        // /**
-        // * @brief linspace constructor.
-        // * 
-        // * @param start  - coordinate start value,
-        // * @param end    - coordinate end value,
-        // * @param count  - number of points (values) of the coordinate.
-        // *
-        // */
-        // linspace(T start, T end, std::size_t count)
-        //     : std::vector<T>(count)
-        // {
-        //     if (start >= end)
-        //         throw new std::invalid_argument("linspace: start >= end.");
+		/**
+		* @brief linspace constructor.
+		*
+		* @param start - the start value,
+		* @param end   - the end value,
+		* @param size  - the number of points between the start and end values.
+		*
+		* @exception std::invalid_argument - raised when size < 2.
+		*/
+		linspace(T start, T end, std::size_t size)
+			: std::vector<T>()
+			, delta(size > 1 ? (end - start) / (size - 1) : throw new std::invalid_argument("linspace size < 2."))
+		{
+			for (size_t i = 0; i < size; ++i)
+			{
+				this->push_back(start + i * delta);
+			}
+		}
 
-        //     if (count <= 0)
-        //         throw new std::invalid_argument("linspace: count <= 0.");
-
-        //     T delta = (end - start) / count;
-        //     delta = (end + delta - start) / count;
-            
-        //     // for(size_t i = 0; i < this->size(); ++i) (*this)[i] = (start + i * delta);
-        //     T x = start;
-        //     for(auto &v : *this)
-        //     {
-        //         v = x;
-        //         x += delta;
-        //     }
-        // }
-
-        /**
-        * @brief linspace constructor.
-        * 
-        * @param start  - coordinate start value,
-        * @param end    - coordinate end value,
-        * @param count  - number of points (values) of the coordinate.
-        *
-        */
-        linspace(T start, T end, std::size_t count, bool end_included = true)
-            : std::vector<T>()
-        {
-            if (start >= end)
-                throw new std::invalid_argument("linspace: start >= end.");
-
-            if (count <= 0)
-                throw new std::invalid_argument("linspace: count <= 0.");
-
-            T delta = (end - start) / count;
-            T stop = end_included ? end + delta : end;
-            while(start < stop)
-            {
-                this->push_back(start);
-                start += delta;
-            }
-        }
-    };
+		/**
+		* @brief linspace copy constructor.
+		*
+		* @param other - linspace object to copy from.
+		*
+		*/
+		linspace(const linspace& other)
+			: std::vector<T>(other)
+			, delta(other.delta)
+		{
+		}
+	};
 }
 
 #endif /* !LINSPACE_HPP */
