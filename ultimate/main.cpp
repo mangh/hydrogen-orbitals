@@ -87,10 +87,10 @@ int main()
     constexpr auto max_precision{std::numeric_limits<numeral_t>::digits10 + 1};     
 
     /* Print some results */
-    for(std::size_t i = 0; i < sd.r_p.size(); ++i)
+    for(std::size_t i = 0; i < sd.radial.size(); ++i)
     {
-        std::size_t theta = sd.theta_p.size() / 4;
-        std::size_t phi = sd.phi_p.size() / 2;
+        std::size_t theta = sd.theta.size() / 4;
+        std::size_t phi = sd.phi.size() / 2;
         std::cout
             << "real psi[" << i << "][" << theta << "][" << phi << "]: " << std::fixed << sd.psi[i][theta][phi].real()
             << ", im psi[" << i << "][" << theta << "][" << phi << "]: " << std::fixed << sd.psi[i][theta][phi].imag()
