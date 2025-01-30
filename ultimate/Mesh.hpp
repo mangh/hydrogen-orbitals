@@ -1,32 +1,21 @@
-#ifndef SOLUTION_DATA_HPP
-#define SOLUTION_DATA_HPP
+#ifndef MANGH_HYDROGEN_SOLUTION_DATA_HPP
+#define MANGH_HYDROGEN_SOLUTION_DATA_HPP
 
 #include <fstream>
 
+#include "numbers.hpp"
 #include "linspace.hpp"
-#include "Numeral.hpp"
-
-#include "Array3d.hpp"
-#include "PhysicalParameters.hpp"
+#include "array3d.hpp"
+#include "Parameters.hpp"
 #include "QuantumState.hpp"
 
-template <class charT, charT sep>
-class punct_facet: public std::numpunct<charT>
+namespace mangh::hydrogen
 {
-protected:
-    charT do_decimal_point() const { return sep; }
-};
-
-namespace HydrogenOrbitals
-{
-    constexpr numeral_t M_PI = 3.141592653589793238462643383279502884L;
-    constexpr complex_t CZERO{ 0.0, 0.0 };
-
     /**
-     * @brief Solution data.
+     * @brief Data mesh.
      *
      */
-    struct SolutionData
+    struct Mesh
     {
         ///////////////////////////////////////////////////////////////////
         ///
@@ -39,24 +28,24 @@ namespace HydrogenOrbitals
         ///
 
         /// @brief Radial coordinate.
-        linspace<numeral_t> radial;
+        linspace<number_t> radial;
 
         /// @brief Azimuthal coordinate θ (angle in the XY-plane from the X-axis such that: 0 ≤ θ < 2π).
-        linspace<numeral_t> theta;
+        linspace<number_t> theta;
 
-        /// @brief Polar coordinate φ (angle from the positive Z axis such that: 0 ≤ ϕ ≤ π).
-        linspace<numeral_t> phi;
+        /// @brief Polar coordinate φ (angle from the positive Z axis such that: 0 ≤ φ ≤ π).
+        linspace<number_t> phi;
 
         /// @brief Wave function (Ψ).
-        Array3d<complex_t> psi;
+        array3d<complex_t> psi;
 
-        numeral_t max_pd;
-        numeral_t max_real;
+        number_t max_pd;
+        number_t max_real;
         //numeral_t E;
-        numeral_t error;
+        number_t error;
 
         // Normalizing factor
-        numeral_t integral;
+        number_t integral;
 
         ///////////////////////////////////////////////////////////////////
         ///
@@ -66,19 +55,18 @@ namespace HydrogenOrbitals
         /**
         * @brief No default constructor!
         */
-        SolutionData() = delete;
+        Mesh() = delete;
 
         /**
-         * @brief SolutionData constructor.
+         * @brief Mesh constructor.
          *
          * @param radial - radial coordinate vector,
          * @param theta - azimuthal coordinate vector,
          * @param phis - polar coordinate vector.
          */
-        SolutionData(
-                const linspace<numeral_t>& radial, 
-                const linspace<numeral_t>& theta, 
-                const linspace<numeral_t>& phi
+        Mesh(const linspace<number_t>& radial,
+             const linspace<number_t>& theta,
+             const linspace<number_t>& phi
             )
             : radial(radial)
             , theta(theta)
@@ -86,10 +74,10 @@ namespace HydrogenOrbitals
 
             , psi(radial.size(), theta.size(), phi.size())
 
-            , max_pd(std::numeric_limits<numeral_t>::min())
-            , max_real(std::numeric_limits<numeral_t>::min())
-            , error(std::numeric_limits<numeral_t>::min())
-            , integral(std::numeric_limits<numeral_t>::min())
+            , max_pd(std::numeric_limits<number_t>::min())
+            , max_real(std::numeric_limits<number_t>::min())
+            , error(std::numeric_limits<number_t>::min())
+            , integral(std::numeric_limits<number_t>::min())
         {
             for(auto& th : this->theta) th += theta.delta / 2.0;
         }
@@ -99,16 +87,16 @@ namespace HydrogenOrbitals
         ///     Methods
         ///
 
-        void compute_wave_function(const PhysicalParameters& param, const QuantumState& qs)
+        void compute_wave_function(const Parameters& param, const QuantumState& qs)
         {
-            max_pd = std::numeric_limits<numeral_t>::min();
-            max_real = std::numeric_limits<numeral_t>::min();
+            max_pd = std::numeric_limits<number_t>::min();
+            max_real = std::numeric_limits<number_t>::min();
 
             for (std::size_t i = 0; i < radial.size(); ++i)
             {
                 // normalized radial distance from the nucleus:
                 //      ρ = 2 * r / (n * a0):
-                numeral_t rho = radial[i] / param.a0;
+                number_t rho = radial[i] / param.a0;
 
                 for (std::size_t j = 0; j < theta.size(); ++j)
                 {
@@ -118,7 +106,7 @@ namespace HydrogenOrbitals
                     
                         if (psi[i][j][k].real() > max_real) max_real = psi[i][j][k].real();
                     
-                        numeral_t pd = norm(psi[i][j][k]);
+                        number_t pd = norm(psi[i][j][k]);
 
                         if (pd > max_pd) max_pd = pd;
                     }
@@ -128,20 +116,18 @@ namespace HydrogenOrbitals
 
         void normalize_psi()
         {
+            static constexpr number_t M_PI = mangh::math::PI_V<number_t>;
+            // static constexpr numeral_t M_PI = mangh::math::PI;
+
             integral = 0.0;
 
             /* Top pole */
             for (std::size_t i = 1; i < radial.size(); ++i)
             {
-                // d = r.delta / 2.0
-                // r = r[i]
-                // r1 = r[i] - d
-                // r2 = r[i] + d
-                // dvol = r2^3 - r1^3 = (r + d)^3 - (r - d)^3
-                //      = 2 * d * (3*r^2 + d^2)
-                numeral_t dvol = radial.delta * (3.0 * radial[i] * radial[i] + radial.delta * radial.delta / 4.0);
-                numeral_t probability_per_vol =
-                    2.0 / 3.0 * M_PI * (1 - cos(phi.delta / 2.0)) * dvol * norm(psi[i][0][0]);
+                number_t rlo = radial[i] - radial.delta / 2.0;
+                number_t rhi = radial[i] + radial.delta / 2.0;
+                number_t probability_per_vol =
+                    2.0 / 3.0 * M_PI * (1 - cos(phi.delta / 2.0)) * (rhi * rhi * rhi - rlo * rlo * rlo) * norm(psi[i][0][0]);
 
                 integral += probability_per_vol;
             }
@@ -153,7 +139,7 @@ namespace HydrogenOrbitals
                 {
                     for (std::size_t k = 1; k < phi.size() - 1; ++k)
                     {
-                        numeral_t probability_per_vol = 
+                        number_t probability_per_vol = 
                             radial[i] * radial[i] * sin(phi[k]) * phi.delta * theta.delta * radial.delta * norm(psi[i][j][k]);
                         integral += probability_per_vol;
                     }
@@ -163,9 +149,10 @@ namespace HydrogenOrbitals
             /* Bottom pole */
             for (std::size_t i = 1; i < radial.size(); ++i)
             {
-                numeral_t dVol = radial.delta * (3.0 * radial[i] * radial[i] + radial.delta * radial.delta / 4.0);
-                numeral_t probability_per_vol = 
-                    2.0 / 3.0 * M_PI * (1 - cos(phi.delta / 2.0)) * dVol * norm(psi[i][0][phi.size() - 1]);
+                number_t rlo = radial[i] - radial.delta / 2.0;
+                number_t rhi = radial[i] + radial.delta / 2.0;
+                number_t probability_per_vol = 
+                    2.0 / 3.0 * M_PI * (1 - cos(phi.delta / 2.0)) * (rhi * rhi * rhi - rlo * rlo * rlo) * norm(psi[i][0][phi.size() - 1]);
                 integral += probability_per_vol;
             }
 
@@ -213,8 +200,8 @@ namespace HydrogenOrbitals
                 {
                     for (std::size_t k = 0; k < phi.size(); ++k)
                     {
-                        numeral_t x = radial[i] * sin(phi[k]) * cos(theta[j]);
-                        numeral_t z = radial[i] * cos(phi[k]);
+                        number_t x = radial[i] * sin(phi[k]) * cos(theta[j]);
+                        number_t z = radial[i] * cos(phi[k]);
                         myfile_pd << x << " " << z << " " << norm(psi[i][j][k]) << std::endl;
                     }
                 }
@@ -226,8 +213,8 @@ namespace HydrogenOrbitals
                 {
                     for (std::size_t k = 0; k < phi.size(); ++k)
                     {
-                        numeral_t x = radial[i] * sin(phi[k]) * cos(theta[j]);
-                        numeral_t z = radial[i] * cos(phi[k]);
+                        number_t x = radial[i] * sin(phi[k]) * cos(theta[j]);
+                        number_t z = radial[i] * cos(phi[k]);
                         myfile_pd << x << " " << z << " " << norm(psi[i][j][k]) << std::endl;
                     }
                 }
@@ -250,8 +237,8 @@ namespace HydrogenOrbitals
                 {
                     for (std::size_t k = 0; k < phi.size(); ++k)
                     {
-                        numeral_t x = radial[i] * sin(phi[k]) * cos(theta[j]);
-                        numeral_t z = radial[i] * cos(phi[k]);
+                        number_t x = radial[i] * sin(phi[k]) * cos(theta[j]);
+                        number_t z = radial[i] * cos(phi[k]);
                         myfile_real << x << " " << z << " " << psi[i][j][k].real() << std::endl;
                     }
                 }
@@ -287,8 +274,8 @@ namespace HydrogenOrbitals
                 {
                     for (std::size_t k = 0; k < phi.size(); ++k)
                     {
-                        numeral_t x = radial[i] * sin(phi[k]) * cos(theta[j]);
-                        numeral_t z = radial[i] * cos(phi[k]);
+                        number_t x = radial[i] * sin(phi[k]) * cos(theta[j]);
+                        number_t z = radial[i] * cos(phi[k]);
                         myfile_im << x << " " << z << " " << psi[i][j][k].imag() << std::endl;
                     }
                 }
@@ -300,8 +287,8 @@ namespace HydrogenOrbitals
                 {
                     for (std::size_t k = 0; k < phi.size(); ++k)
                     {
-                        numeral_t x = radial[i] * sin(phi[k]) * cos(theta[j]);
-                        numeral_t z = radial[i] * cos(phi[k]);
+                        number_t x = radial[i] * sin(phi[k]) * cos(theta[j]);
+                        number_t z = radial[i] * cos(phi[k]);
                         myfile_im << x << " " << z << " " << psi[i][j][k].imag() << std::endl;
                     }
                 }
@@ -322,8 +309,8 @@ namespace HydrogenOrbitals
                 {
                     for (std::size_t k = phi.size() / 2; k < phi.size() / 2 + 1; ++k)
                     {
-                        numeral_t x = radial[i] * sin(phi[k]) * cos(theta[j]);
-                        numeral_t y = radial[i] * sin(phi[k]) * sin(theta[j]);
+                        number_t x = radial[i] * sin(phi[k]) * cos(theta[j]);
+                        number_t y = radial[i] * sin(phi[k]) * sin(theta[j]);
                         myfile_phi_2 << x << " " << y << " " << psi[i][j][k].real() << std::endl;
                     }
                 }
@@ -344,8 +331,8 @@ namespace HydrogenOrbitals
                 {
                     for (std::size_t k = phi.size() / 2; k < phi.size() / 2 + 1; ++k)
                     {
-                        numeral_t x = radial[i] * sin(phi[k]) * cos(theta[j]);
-                        numeral_t y = radial[i] * sin(phi[k]) * sin(theta[j]);
+                        number_t x = radial[i] * sin(phi[k]) * cos(theta[j]);
+                        number_t y = radial[i] * sin(phi[k]) * sin(theta[j]);
                         myfile_phi_2_im << x << " " << y << " " << psi[i][j][k].imag() << std::endl;
                     }
                 }
@@ -354,12 +341,14 @@ namespace HydrogenOrbitals
             myfile_phi_2_im.close();
         }
 
-        void verify_solution(const PhysicalParameters& params, const QuantumState& qs)
+        void verify_solution(const Parameters& params, const QuantumState& qs)
         {
-            Array3d<complex_t> ratio(radial.size(), theta.size(), phi.size());
+            static constexpr complex_t CZERO{ 0.0, 0.0 };
 
-            numeral_t alpha = params.h / (2.0 * params.mp);
-            numeral_t E = params.ke / (qs.n * qs.n);
+            array3d<complex_t> ratio(radial.size(), theta.size(), phi.size());
+
+            number_t alpha = params.h / (2.0 * params.mp);
+            number_t E = params.ke / (qs.n * qs.n);
 
             for (std::size_t i = 1; i < radial.size() - 1; ++i)
             {
@@ -370,21 +359,21 @@ namespace HydrogenOrbitals
                         if (psi[i][j][k] == CZERO)
                             continue;
 
-                        numeral_t dV1 = radial[i] * radial[i] * radial.delta;
-                        numeral_t dV2 = radial[i] * radial[i] * sin(phi[k]) * sin(phi[k]) * theta.delta;
-                        numeral_t dV3 = radial[i] * radial[i] * sin(phi[k]) * phi.delta;
+                        number_t dV1 = radial[i] * radial[i] * radial.delta;
+                        number_t dV2 = radial[i] * radial[i] * sin(phi[k]) * sin(phi[k]) * theta.delta;
+                        number_t dV3 = radial[i] * radial[i] * sin(phi[k]) * phi.delta;
 
                         // numeral_t aS = r[i - 1] * r[i - 1] * alpha / (dV1 * r_p.delta);
                         // numeral_t aN = r[i] * r[i] * alpha / (dV1 * r_p.delta);
-                        numeral_t r1 = radial[i] - radial.delta / 2.0;
-                        numeral_t r2 = radial[i] + radial.delta / 2.0;
+                        number_t r1 = radial[i] - radial.delta / 2.0;
+                        number_t r2 = radial[i] + radial.delta / 2.0;
 
-                        numeral_t aS = r1 * r1 * alpha / (dV1 * radial.delta);
-                        numeral_t aN = r2 * r2 * alpha / (dV1 * radial.delta);
-                        numeral_t aW = alpha / (dV2 * theta.delta);
-                        numeral_t aE = alpha / (dV2 * theta.delta);
-                        numeral_t aB = sin(phi[k] - phi.delta / 2.0) * alpha / (dV3 * phi.delta);
-                        numeral_t aT = sin(phi[k] + phi.delta / 2.0) * alpha / (dV3 * phi.delta);
+                        number_t aS = r1 * r1 * alpha / (dV1 * radial.delta);
+                        number_t aN = r2 * r2 * alpha / (dV1 * radial.delta);
+                        number_t aW = alpha / (dV2 * theta.delta);
+                        number_t aE = alpha / (dV2 * theta.delta);
+                        number_t aB = sin(phi[k] - phi.delta / 2.0) * alpha / (dV3 * phi.delta);
+                        number_t aT = sin(phi[k] + phi.delta / 2.0) * alpha / (dV3 * phi.delta);
 
                         complex_t psi_s{ -aS * psi[i - 1][j][k] };
                         complex_t psi_n{ -aN * psi[i + 1][j][k] };
@@ -396,7 +385,7 @@ namespace HydrogenOrbitals
                         complex_t psi_p_k_rp{ -params.kp / radial[i] * psi[i][j][k] };
 
                         complex_t Fp{ psi_s + psi_n + psi_w + psi_e + psi_b + psi_t + psi_p_k_rp };
-                        numeral_t ap = aS + aN + aW + aE + aB + aT - E;
+                        number_t ap = aS + aN + aW + aE + aB + aT - E;
                         complex_t ap_psi_p{ -ap * psi[i][j][k] };
 
                         ratio[i][j][k] = Fp / ap_psi_p;
@@ -424,4 +413,4 @@ namespace HydrogenOrbitals
     };
 }
 
-#endif /* !SOLUTION_DATA_HPP */
+#endif /* !MANGH_HYDROGEN_SOLUTION_DATA_HPP */

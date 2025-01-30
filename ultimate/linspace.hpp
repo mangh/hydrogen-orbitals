@@ -1,9 +1,9 @@
-#ifndef LINSPACE_HPP
-#define LINSPACE_HPP
+#ifndef MANGH_LINSPACE_HPP
+#define MANGH_LINSPACE_HPP
 
 #include <vector>
 
-namespace HydrogenOrbitals
+namespace mangh::math
 {
 	/**
 	* @brief linspace (vector of evenly spaced points).
@@ -63,4 +63,4 @@ namespace HydrogenOrbitals
 	};
 }
 
-#endif /* !LINSPACE_HPP */
+#endif /* !MANGH_LINSPACE_HPP */

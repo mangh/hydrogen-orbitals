@@ -1,15 +1,15 @@
-#ifndef SPECIAL_POLYNOMIALS_HPP
-#define SPECIAL_POLYNOMIALS_HPP
+#ifndef MANGH_POLYNOMIALS_HPP
+#define MANGH_POLYNOMIALS_HPP
 
 #include <cassert>
 #include <cmath>
 #include <type_traits>
 #include <stdexcept>
 
-namespace SpecialPolynomial
-{
-    constexpr double PI = 3.141592653589793238462643383279502884L;
+#include "numbers.hpp"
 
+namespace mangh::math
+{
     /**
     * @brief Factorial that can return large values.
     * 
@@ -20,7 +20,7 @@ namespace SpecialPolynomial
     template<typename T>
     static T fact(unsigned n)
     {
-        static_assert(std::is_floating_point<T>::value, "fact(n) requires a floating-point type parameter.");
+        static_assert(std::is_floating_point<T>::value, "T fact(n): function template requires a floating-point type parameter T.");
         return std::exp(std::lgamma(n + 1));
     }
 
@@ -46,7 +46,7 @@ namespace SpecialPolynomial
     T assoc_laguerre(unsigned n, unsigned alpha, T x)
     {
         static_assert(std::is_floating_point<T>::value,
-            "Associated Laguerre polynomial requires a floating-point type parameter x."
+            "T assoc_laguerre(unsigned n, unsigned alpha, T x): function template requires a floating-point type parameter T."
         );
 
         T L2 = 0.0;
@@ -61,7 +61,7 @@ namespace SpecialPolynomial
     }
 
     /**
-     * @brief Associated Legendre polynomial normalized for use in spherical harmonics.
+     * @brief Associated Legendre polynomial NORMALIZED for use in spherical harmonics Yl,m.
      * 
      * @tparam T - floating point type of the argument.
      * 
@@ -69,7 +69,7 @@ namespace SpecialPolynomial
      * @param m - the order of the polynomial,
      * @param x - the argument.
      * 
-     * @returns The value of the associated Legendre polynomial ~Pm,l(x) normalized for use with spherical harmonics Yl,m.
+     * @returns The value of the associated Legendre polynomial ~Pm,l(x), NORMALIZED for use with spherical harmonics Yl,m.
      * 
      * @pre 0 <= m <= l
      * @pre -1 <= x <= 1
@@ -83,13 +83,16 @@ namespace SpecialPolynomial
     T ylm_assoc_legendre(unsigned l, unsigned m, T x)
     {
         static_assert(std::is_floating_point<T>::value,
-            "ylm_assoc_legendre() requires a floating-point type parameter x."
+            "T ylm_assoc_legendre(unsigned l, unsigned m, T x): function template requires a floating-point type parameter T."
         );
 
+        static constexpr T PI = mangh::math::PI_V<T>;
+
         if (m > l)
-            throw std::invalid_argument("ylm_assoc_legendre(l,m,x): bad l, m arguments. Should be: m <= l, and is: m > l.");
+            throw std::invalid_argument("T ylm_assoc_legendre(unsigned l, unsigned m, T x): bad arguments l < m (and should be m <= l).");
+
         if ((x < -1) || (x > 1))
-            throw std::invalid_argument("ylm_assoc_legendre(l,m,x): bad argument x. Should be: -1 <= x <= 1, but it is not.");
+            throw std::invalid_argument("T ylm_assoc_legendre(unsigned l, unsigned m, T x): bad argument x (outside the allowed range: -1 <= x <= 1).");
 
         // compute ~Pm,m
         T Pmm = 1.0;
@@ -132,7 +135,7 @@ namespace SpecialPolynomial
     }
 
     /**
-     * @brief Factor to renormalize Legendre polynomials built for spherical harmonics.
+     * @brief Factor to renormalize Legendre polynomials built for spherical harmonics Yl,m.
      * 
      * @tparam T - floating point type of the argument.
      * 
@@ -150,18 +153,20 @@ namespace SpecialPolynomial
      *        ylm_assoc_legendre(l,m,x) / ylm_normalizing_factor<T>(l,m).
      * 
      * @pre m <= l
-     * @exception invalid_argument - when the @precondition is not met.
+     * @exception std::invalid_argument - when arguments do not meet the @precondition.
      * 
      */
     template<typename T>
     T ylm_normalizing_factor(unsigned l, unsigned m)
     {
         static_assert(std::is_floating_point<T>::value,
-            "ylm_assoc_legendre() requires a floating-point type parameter x."
+            "T ylm_normalizing_factor(unsigned l, unsigned m): function template requires a floating-point type parameter T."
         );
 
+        static constexpr T PI = mangh::math::PI_V<T>;
+
         if (m > l)
-            throw std::invalid_argument("ylm_normalizing_factor(l,m): bad arguments. Should be: m <= l, and is: m > l.");
+            throw std::invalid_argument("T ylm_normalizing_factor(unsigned l, unsigned m): bad arguments l < m (and should be m <= l).");
 
         T prod = 1.0;
         for (unsigned j = l - m + 1; j <= l + m; ++j) prod *= j;
@@ -190,10 +195,10 @@ namespace SpecialPolynomial
     T assoc_legendre(unsigned l, unsigned m, T x)
     {
         static_assert(std::is_floating_point<T>::value,
-            "ylm_assoc_legendre() requires a floating-point type parameter x."
+            "T assoc_legendre(unsigned l, unsigned m, T x): function template requires a floating-point type parameter T."
         );
         return ylm_assoc_legendre(l,m,x) / ylm_normalizing_factor<T>(l, m);
     }
 }
 
-#endif /* !SPECIAL_POLYNOMIALS_HPP */
+#endif /* !MANGH_POLYNOMIALS_HPP */

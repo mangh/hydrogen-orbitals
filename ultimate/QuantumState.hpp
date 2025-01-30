@@ -1,19 +1,19 @@
-#ifndef QUANTUM_STATE_HPP
-#define QUANTUM_STATE_HPP
+#ifndef MANGH_HYDROGEN_QUANTUM_STATE_HPP
+#define MANGH_HYDROGEN_QUANTUM_STATE_HPP
 
 #include <cmath>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
-#include "Numeral.hpp"
-#include "SpecialPolynomial.hpp"
+#include "numbers.hpp"
+#include "polynomials.hpp"
 
-namespace HydrogenOrbitals
+namespace mangh::hydrogen
 {
     using std::invalid_argument;
     using std::to_string;
-    using namespace SpecialPolynomial;
+    using namespace mangh::math;
 
     /**
      * @brief Quantum numbers.
@@ -33,7 +33,7 @@ namespace HydrogenOrbitals
         ///     Properties
         ///
 
-        /// @brief Principal quantum number (represents the electron's energy level and relative size of the orbital).
+        /// @brief Principal quantum number (represents the electron's energy level and relative size of the orbital)
         /// @pre: 0 < n.
         const unsigned n;
 
@@ -109,14 +109,15 @@ namespace HydrogenOrbitals
          * @param n - principal quantum number,
          * @param l - azimutha quantum number,
          * @param a0 - Bohr radius
+         * 
          * @returns numeral_t 
          */
-        static numeral_t Rnl_normalizing_factor(unsigned n, unsigned l, numeral_t a0)
+        static number_t Rnl_normalizing_factor(unsigned n, unsigned l, number_t a0)
         {
             return std::sqrt(
                 std::pow(2.0 / n / a0, 3) *
-                fact<numeral_t>(n - l - 1) /
-                2.0 / n / fact<numeral_t>(n + l)
+                fact<number_t>(n - l - 1) /
+                2.0 / n / fact<number_t>(n + l)
             );
         }
 
@@ -128,7 +129,7 @@ namespace HydrogenOrbitals
          * @param rho - normalized radial distance from the nucleus: ρ = r / a0.
          * @returns The value of the radial function Rn,l(ρ).
          */
-        numeral_t Rnl(numeral_t rho) const
+        number_t Rnl(number_t rho) const
         {
             return
                 exp(-rho / n) *
@@ -138,14 +139,14 @@ namespace HydrogenOrbitals
 
         /**
          * @brief Angular part Yl,m(θ,φ) of the wave function (spherical harmonics).
-         * @details Yl,m(θ,φ) = Pl,m(cos⁡ ϕ) * e^imθ.
+         * @details Yl,m(θ,φ) = Pl,m(cos⁡ φ) * e^imθ.
          * 
          * @param theta - azimuthal angle θ (the angle in the xy-plane from the x-axis with 0 ≤ θ < 2π),
-         * @param phi - polar angle ϕ (the angle from the positive z-axis with 0 ≤ ϕ ≤ π),
+         * @param phi - polar angle φ (the angle from the positive z-axis with 0 ≤ φ ≤ π),
          * @returns The value of the spherical harmonic Yl,m(θ,φ).
          *
          */
-        complex_t Ylm(numeral_t theta, numeral_t phi) const
+        complex_t Ylm(number_t theta, number_t phi) const
         {
             unsigned mm = (m < 0) ? -m : m;
 
@@ -156,20 +157,20 @@ namespace HydrogenOrbitals
         }
 
         /**
-         * @brief Normalized wave function Ψn,l,m(ρ,θ,ϕ) = Rn,l(ρ) * Yl,m(θ, ϕ).
+         * @brief Normalized wave function Ψn,l,m(ρ,θ,φ) = Rn,l(ρ) * Yl,m(θ, φ).
          *
          * @param rho - normalized radial distance from the nucleus: ρ = r / (n * a0).
-         * @param theta - azimuthal angle θ (the angle in the xy-plane from the x-axis with 0 ≤ θ < 2π),
-         * @param phi - polar angle ϕ (the angle from the positive z-axis with 0 ≤ ϕ ≤ π),
+         * @param theta - azimuthal angle θ (the angle in the XY-plane from the X-axis with 0 ≤ θ < 2π),
+         * @param phi - polar angle φ (the angle from the positive Z-axis with 0 ≤ φ ≤ π),
          *
          * @returns The value of the wave function.
          *
          */
-        complex_t WaveFunction(numeral_t rho, numeral_t theta, numeral_t phi) const
+        complex_t WaveFunction(number_t rho, number_t theta, number_t phi) const
         {
             return Rnl_normalizing_factor(n, l, 1.0) * Rnl(rho) * Ylm(theta, phi);
         }
     };
 }
 
-#endif /* !QUANTUM_STATE_HPP */
+#endif /* !MANGH_HYDROGEN_QUANTUM_STATE_HPP */

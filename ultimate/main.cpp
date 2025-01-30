@@ -9,15 +9,18 @@
 #include <iostream>
 #include <iomanip>
 
-#include "PhysicalParameters.hpp"
+#include "Parameters.hpp"
 #include "QuantumState.hpp"
-#include "SolutionData.hpp"
+#include "Mesh.hpp"
 #include "linspace.hpp"
 
-using namespace HydrogenOrbitals;
+// using namespace mangh::math;
+using namespace mangh::hydrogen;
 
 int main()
 {
+    constexpr number_t PI = PI_V<number_t>;
+
     QuantumState qn
     {
         4,  // n - principal quantum number
@@ -25,7 +28,7 @@ int main()
         1,  // m - magnetic quantum number
     };
 
-    PhysicalParameters params
+    Parameters params
     {
         1.0,   // a0_ - Bohr radius,
         1.0,   // h_  - Planck constant (???),
@@ -34,66 +37,66 @@ int main()
         1.0    // ke_ - constant in energy level equation (???).
     };
 
-    SolutionData sd
+    Mesh mesh
     {
-		linspace<numeral_t>{ 0.0, 40.0, 200 },      //  radius
-        linspace<numeral_t>{ 0.0, 2.0 * M_PI, 40 }, //  theta
-		linspace<numeral_t>{ 0.0, M_PI, 20 }		//  phi
+        linspace<number_t>{ 0.0, 40.0, 200 },       //  radial coordinates
+        linspace<number_t>{ 0.0, 2.0 * PI, 40 },    //  azimuthal coordinates
+        linspace<number_t>{ 0.0, PI, 20 }		    //  polar coordinates
     };
 
-    // sd.export_psi("psi.txt", params, qn, radii, thetas, phis);
+    // mesh.export_psi("psi.txt", params, qn, radii, thetas, phis);
 
     /* Compute psi */
-    sd.compute_wave_function(params, qn);
+    mesh.compute_wave_function(params, qn);
 
     /* Normalize psi */
-    sd.normalize_psi();
+    mesh.normalize_psi();
 
     // /* Compute probability density */
-    // sd.compute_probability_density();
+    // mesh.compute_probability_density();
 
     // /* Compute max probability density */
-    // numeral_t max_pd = sd.compute_max_pd();
+    // numeral_t max_pd = mesh.compute_max_pd();
 
     // /* Compute max psi_real */
-    // numeral_t max_real = sd.compute_max_psi_real();
+    // numeral_t max_real = mesh.compute_max_psi_real();
 
     /* Export domain data */
-    sd.export_grid_data("grid_data.txt"/* , max_pd, max_real */);
+    mesh.export_grid_data("grid_data.txt"/* , max_pd, max_real */);
 
     /* Export probability density data */
-    sd.export_probability_density("data.txt");
+    mesh.export_probability_density("data.txt");
 
     /* Export psi real data */
-    sd.export_psi_real("data_real.txt");
+    mesh.export_psi_real("data_real.txt");
 
     /* Export psi im data */
-    sd.export_psi_im("data_im.txt");
+    mesh.export_psi_im("data_im.txt");
 
     /* Export psi real data at n_phi/2 */
-    sd.export_data_phi_2("data_real_phi_2.txt");
+    mesh.export_data_phi_2("data_real_phi_2.txt");
 
     /* Export psi im data at n_phi/2 */
-    sd.export_data_phi_2_im("data_im_phi_2.txt");
+    mesh.export_data_phi_2_im("data_im_phi_2.txt");
 
     /* Verify solution numerically */
-    sd.verify_solution(params, qn/* , radii, thetas, phis */);
+    mesh.verify_solution(params, qn/* , radii, thetas, phis */);
 
     // char* prev_loc = std::setlocale(LC_ALL, nullptr);
     // std::setlocale(LC_ALL, "pl_PL.UTF-8");
     // if (const char* loc = std::setlocale(LC_ALL, "pl_PL.UTF-8"))
     //     std::printf("New LC_ALL locale: %s\n", loc);
 
-    constexpr auto max_precision{std::numeric_limits<numeral_t>::digits10 + 1};     
+    constexpr auto max_precision{std::numeric_limits<number_t>::digits10 + 1};     
 
     /* Print some results */
-    for(std::size_t i = 0; i < sd.radial.size(); ++i)
+    for(std::size_t i = 0; i < mesh.radial.size(); ++i)
     {
-        std::size_t theta = sd.theta.size() / 4;
-        std::size_t phi = sd.phi.size() / 2;
+        std::size_t theta = mesh.theta.size() / 4;
+        std::size_t phi = mesh.phi.size() / 2;
         std::cout
-            << "real psi[" << i << "][" << theta << "][" << phi << "]: " << std::fixed << sd.psi[i][theta][phi].real()
-            << ", im psi[" << i << "][" << theta << "][" << phi << "]: " << std::fixed << sd.psi[i][theta][phi].imag()
+            << "real psi[" << i << "][" << theta << "][" << phi << "]: " << std::fixed << mesh.psi[i][theta][phi].real()
+            << ", im psi[" << i << "][" << theta << "][" << phi << "]: " << std::fixed << mesh.psi[i][theta][phi].imag()
             << std::endl
             ;
     }
@@ -123,8 +126,8 @@ int main()
     // //         << phi << "\t"
     // //         << std::scientific
     // //         << std::setprecision(max_precision)
-    // //         << sd.psi[i][theta][phi].real() << "\t"
-    // //         << sd.psi[i][theta][phi].imag()
+    // //         << mesh.psi[i][theta][phi].real() << "\t"
+    // //         << mesh.psi[i][theta][phi].imag()
     // //         << std::endl
     // //         ;
     // // }
@@ -133,9 +136,11 @@ int main()
         << std::scientific
         << std::setprecision(max_precision)
         << std::fixed
-        << "error in percentage : " << sd.error << std::endl
-        << "normalization constant : " << std::sqrt(sd.integral) << std::endl;
+        << "error in percentage : " << mesh.error << std::endl
+        << "normalization constant : " << std::sqrt(mesh.integral) << std::endl;
 
     // if (const char* loc = std::setlocale(LC_ALL, prev_loc/*.c_str()*/))
     //     std::printf("Restorred LC_ALL locale: %s\n", loc);
+
+    return EXIT_SUCCESS;
 }

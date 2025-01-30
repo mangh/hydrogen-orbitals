@@ -1,14 +1,17 @@
-#ifndef PHYSICAL_PARAMETERS_HPP
-#define PHYSICAL_PARAMETERS_HPP
+#ifndef MANGH_HYDROGEN_PARAMETERS_HPP
+#define MANGH_HYDROGEN_PARAMETERS_HPP
 
-#include "Numeral.hpp"
-namespace HydrogenOrbitals
+#include "numbers.hpp"
+
+using namespace mangh::math;
+
+namespace mangh::hydrogen
 {
     /**
-     * @brief Physical parameters.
+     * @brief Physical parameters of the hydrogen atom.
      * 
      */
-    struct PhysicalParameters
+    struct Parameters
     {
         ///////////////////////////////////////////////////////////////////
         ///
@@ -16,19 +19,19 @@ namespace HydrogenOrbitals
         ///
 
         /// @brief Bohr radius.
-        const numeral_t a0;
+        const number_t a0;
 
-        /// @brief Planck (???) constant.
-        const numeral_t h;
+        /// @brief Planck constant.
+        const number_t h;
 
         /// @brief Mass of particle.
-        const numeral_t mp;
+        const number_t mp;
 
         /// @brief Potential constant (???)
-        const numeral_t kp;
+        const number_t kp;
 
         /// @brief Constant in energy level equation (???).
-        const numeral_t ke;
+        const number_t ke;
 
         ///////////////////////////////////////////////////////////////////
         ///
@@ -38,21 +41,19 @@ namespace HydrogenOrbitals
         /**
         * @brief No default constructor!
         */
-        PhysicalParameters() = delete;
+        Parameters() = delete;
 
         /**
-         * @brief PhysicalParameters constructor.
+         * @brief parameters constructor.
          * 
          * @param a0 - reduced (?) Bohr radius,
-         * @param h  - Planck (???) constant,
+         * @param h  - Planck constant,
          * @param mp - Mass of particle,
          * @param kp - Potential constant (depending on the charge of the electron - ???),
          * @param ke - Constant in energy level equation (???).
          *
-         * @remarks Data used in Derek's (original) version: a0 = 1.0, h = 1.0, mp = 1.0, kp = 1.0, ke = 1.0.
-         *
          */
-        PhysicalParameters(numeral_t a0, numeral_t h, numeral_t mp, numeral_t kp, numeral_t ke)
+        Parameters(number_t a0, number_t h, number_t mp, number_t kp, number_t ke)
             : a0(a0)
             , h(h)
             , mp(mp)
@@ -63,4 +64,4 @@ namespace HydrogenOrbitals
     };
 }
 
-#endif /* !PHYSICAL_PARAMETERS_HPP */
+#endif /* !MANGH_HYDROGEN_PARAMETERS_HPP */
