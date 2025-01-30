@@ -7,10 +7,10 @@
 #     C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.42.34433\ATLMFC\include
 #     C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\VS\include
 #     C:\Program Files (x86)\Windows Kits\10\include\10.0.19041.0\ucrt
-#     C:\Program Files (x86)\Windows Kits\10\\include\10.0.19041.0\um
-#     C:\Program Files (x86)\Windows Kits\10\\include\10.0.19041.0\shared
-#     C:\Program Files (x86)\Windows Kits\10\\include\10.0.19041.0\winrt
-#     C:\Program Files (x86)\Windows Kits\10\\include\10.0.19041.0\cppwinrt
+#     C:\Program Files (x86)\Windows Kits\10\include\10.0.19041.0\um
+#     C:\Program Files (x86)\Windows Kits\10\include\10.0.19041.0\shared
+#     C:\Program Files (x86)\Windows Kits\10\include\10.0.19041.0\winrt
+#     C:\Program Files (x86)\Windows Kits\10\include\10.0.19041.0\cppwinrt
 #     C:\Program Files (x86)\Windows Kits\NETFXSDK\4.8\include\um
 CompileFlags:
   Add: 
@@ -19,10 +19,10 @@ CompileFlags:
   - -I C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.42.34433/ATLMFC/include
   - -I C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Auxiliary/VS/include
   - -I C:/Program Files (x86)/Windows Kits/10/include/10.0.19041.0/ucrt
-  - -I C:/Program Files (x86)/Windows Kits/10//include/10.0.19041.0/um
-  - -I C:/Program Files (x86)/Windows Kits/10//include/10.0.19041.0/shared
-  - -I C:/Program Files (x86)/Windows Kits/10//include/10.0.19041.0/winrt
-  - -I C:/Program Files (x86)/Windows Kits/10//include/10.0.19041.0/cppwinrt
+  - -I C:/Program Files (x86)/Windows Kits/10/include/10.0.19041.0/um
+  - -I C:/Program Files (x86)/Windows Kits/10/include/10.0.19041.0/shared
+  - -I C:/Program Files (x86)/Windows Kits/10/include/10.0.19041.0/winrt
+  - -I C:/Program Files (x86)/Windows Kits/10/include/10.0.19041.0/cppwinrt
 #  - -I C:/Program Files (x86)/Windows Kits/NETFXSDK/4.8/include/um
   - -I C:/Users/marek/lib/boost_1_83_0  
 Diagnostics:
