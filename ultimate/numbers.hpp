@@ -5,7 +5,7 @@
 #include <complex>
 
 /**
- * @brief Number types and constants used in calculations.
+ * @brief Mathematical types and constants.
  * 
  */
 namespace mangh::math

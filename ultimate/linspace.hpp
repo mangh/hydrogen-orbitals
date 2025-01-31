@@ -6,7 +6,7 @@
 namespace mangh::math
 {
 	/**
-	* @brief linspace (vector of evenly spaced points).
+	* @brief linspace (a vector of evenly spaced numbers of type T).
 	*
 	*/
 	template<typename T>
@@ -19,7 +19,7 @@ namespace mangh::math
 		///     Properties
 		///
 
-		/// @brief Delta (step) value - the interval between consecutive points.
+		/// @brief Delta (step) value - the interval between consecutive numbers.
 		const T delta;
 
 		///////////////////////////////////////////////////////////////////
@@ -35,18 +35,23 @@ namespace mangh::math
 		*
 		* @param start - the start value,
 		* @param end   - the end value,
-		* @param size  - the number of points between the start and end values.
+		* @param size  - the number of points between the `start` and `end` values.
 		*
-		* @exception std::invalid_argument - raised when size < 2.
+		* @retval 
+		*
+		* @li - for `size > 1`: vector of `size` elements evenly spaced between the `start` and `end` values,
+		*
+		* @li - for `size = 1`: one-element vector (with the only element set to `start`),
+		*
+		* @li - for `size < 1`: empty vector.
+		*
+		* 
 		*/
 		linspace(T start, T end, std::size_t size)
 			: std::vector<T>()
-			, delta(size > 1 ? (end - start) / (size - 1) : throw new std::invalid_argument("linspace size < 2."))
+			, delta(size > 1 ? (end - start) / (size - 1) : T{})
 		{
-			for (size_t i = 0; i < size; ++i)
-			{
-				this->push_back(start + i * delta);
-			}
+			for (size_t i = 0; i < size; ++i) this->push_back(start + i * delta);
 		}
 
 		/**
