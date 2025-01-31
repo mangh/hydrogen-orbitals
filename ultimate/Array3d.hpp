@@ -4,7 +4,7 @@
 #include <cassert>
 #include <vector>
 
-#include "cppfeatures.h"
+#include "cppfeatures.hpp"
 
 namespace mangh::math
 {
