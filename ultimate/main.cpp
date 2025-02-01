@@ -21,7 +21,7 @@ int main()
 {
     constexpr number_t PI = PI_V<number_t>;
 
-    QuantumState qn
+    QuantumState qs
     {
         4,  // n - principal quantum number
         2,  // l - azimuthal number
@@ -44,10 +44,10 @@ int main()
         linspace<number_t>{ 0.0, PI, 20 }		    //  polar coordinates
     };
 
-    // mesh.export_psi("psi.txt", params, qn, radii, thetas, phis);
+    // mesh.export_psi("psi.txt", params, qs, radii, thetas, phis);
 
     /* Compute psi */
-    mesh.compute_wave_function(params, qn);
+    mesh.compute_wave_function(params, qs);
 
     /* Normalize psi */
     mesh.normalize_psi();
@@ -56,10 +56,10 @@ int main()
     // mesh.compute_probability_density();
 
     // /* Compute max probability density */
-    // numeral_t max_pd = mesh.compute_max_pd();
+    // number_t max_pd = mesh.compute_max_pd();
 
     // /* Compute max psi_real */
-    // numeral_t max_real = mesh.compute_max_psi_real();
+    // number_t max_real = mesh.compute_max_psi_real();
 
     /* Export domain data */
     mesh.export_grid_data("grid_data.txt"/* , max_pd, max_real */);
@@ -80,7 +80,7 @@ int main()
     mesh.export_data_phi_2_im("data_im_phi_2.txt");
 
     /* Verify solution numerically */
-    mesh.verify_solution(params, qn/* , radii, thetas, phis */);
+    mesh.verify_solution(params, qs/* , radii, thetas, phis */);
 
     // char* prev_loc = std::setlocale(LC_ALL, nullptr);
     // std::setlocale(LC_ALL, "pl_PL.UTF-8");
@@ -101,7 +101,7 @@ int main()
             ;
     }
 
-    // // constexpr auto max_precision{std::numeric_limits<numeral_t>::digits10 + 1};     
+    // // constexpr auto max_precision{std::numeric_limits<number_t>::digits10 + 1};     
     // std::cout
     //     << "R = " << radii.back() << "\t"
     //     << "nr = " << dd.n_r << " (" << radii.size() << ")\t"
@@ -137,7 +137,7 @@ int main()
         << std::setprecision(max_precision)
         << std::fixed
         << "error in percentage : " << mesh.error << std::endl
-        << "normalization constant : " << std::sqrt(mesh.integral) << std::endl;
+        << "normalization constant : " << std::sqrt(mesh.total_probability) << std::endl;
 
     // if (const char* loc = std::setlocale(LC_ALL, prev_loc/*.c_str()*/))
     //     std::printf("Restorred LC_ALL locale: %s\n", loc);

@@ -12,7 +12,7 @@
 namespace mangh::hydrogen
 {
     /**
-     * @brief Data mesh.
+     * @brief Data mesh (spherical coordinate grid)
      *
      */
     struct Mesh
@@ -39,13 +39,17 @@ namespace mangh::hydrogen
         /// @brief Wave function (Ψ).
         array3d<complex_t> psi;
 
+        /// @brief Maximum probability density value.
         number_t max_pd;
+
+        /// @brief Maximum value of the real part of the wave function (Ψ).
         number_t max_real;
-        //numeral_t E;
+
+        //number_t E;
         number_t error;
 
-        // Normalizing factor
-        number_t integral;
+        /// @brief Total probability (or normalizing factor) for the entire area covered by the coordinates (r, θ, φ).
+        number_t total_probability;
 
         ///////////////////////////////////////////////////////////////////
         ///
@@ -77,7 +81,7 @@ namespace mangh::hydrogen
             , max_pd(std::numeric_limits<number_t>::min())
             , max_real(std::numeric_limits<number_t>::min())
             , error(std::numeric_limits<number_t>::min())
-            , integral(std::numeric_limits<number_t>::min())
+            , total_probability(std::numeric_limits<number_t>::min())
         {
             for(auto& th : this->theta) th += theta.delta / 2.0;
         }
@@ -117,9 +121,9 @@ namespace mangh::hydrogen
         void normalize_psi()
         {
             static constexpr number_t M_PI = mangh::math::PI_V<number_t>;
-            // static constexpr numeral_t M_PI = mangh::math::PI;
+            // static constexpr number_t M_PI = mangh::math::PI;
 
-            integral = 0.0;
+            total_probability = 0.0;
 
             /* Top pole */
             for (std::size_t i = 1; i < radial.size(); ++i)
@@ -129,7 +133,7 @@ namespace mangh::hydrogen
                 number_t probability_per_vol =
                     2.0 / 3.0 * M_PI * (1 - cos(phi.delta / 2.0)) * (rhi * rhi * rhi - rlo * rlo * rlo) * norm(psi[i][0][0]);
 
-                integral += probability_per_vol;
+                total_probability += probability_per_vol;
             }
 
             /* Central nodes */
@@ -141,7 +145,7 @@ namespace mangh::hydrogen
                     {
                         number_t probability_per_vol = 
                             radial[i] * radial[i] * sin(phi[k]) * phi.delta * theta.delta * radial.delta * norm(psi[i][j][k]);
-                        integral += probability_per_vol;
+                        total_probability += probability_per_vol;
                     }
                 }
             }
@@ -153,7 +157,7 @@ namespace mangh::hydrogen
                 number_t rhi = radial[i] + radial.delta / 2.0;
                 number_t probability_per_vol = 
                     2.0 / 3.0 * M_PI * (1 - cos(phi.delta / 2.0)) * (rhi * rhi * rhi - rlo * rlo * rlo) * norm(psi[i][0][phi.size() - 1]);
-                integral += probability_per_vol;
+                total_probability += probability_per_vol;
             }
 
             // auto integral_sqrt = sqrt(integral);
@@ -363,8 +367,8 @@ namespace mangh::hydrogen
                         number_t dV2 = radial[i] * radial[i] * sin(phi[k]) * sin(phi[k]) * theta.delta;
                         number_t dV3 = radial[i] * radial[i] * sin(phi[k]) * phi.delta;
 
-                        // numeral_t aS = r[i - 1] * r[i - 1] * alpha / (dV1 * r_p.delta);
-                        // numeral_t aN = r[i] * r[i] * alpha / (dV1 * r_p.delta);
+                        // number_t aS = r[i - 1] * r[i - 1] * alpha / (dV1 * r_p.delta);
+                        // number_t aN = r[i] * r[i] * alpha / (dV1 * r_p.delta);
                         number_t r1 = radial[i] - radial.delta / 2.0;
                         number_t r2 = radial[i] + radial.delta / 2.0;
 

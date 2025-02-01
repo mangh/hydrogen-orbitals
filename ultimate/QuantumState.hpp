@@ -16,7 +16,7 @@ namespace mangh::hydrogen
     using namespace mangh::math;
 
     /**
-     * @brief Quantum numbers.
+     * @brief Quantum state.
      * 
      */
     struct QuantumState
@@ -62,12 +62,13 @@ namespace mangh::hydrogen
 
         /**
          * @brief QuantumState constructor.
-         * 
+         *
          * @param n - principal quantum number,
          * @param l - azimuthal number,
          * @param m - magnetic quantum number.
          * @param s - spin quantum number.
-         * @exception invalid_argument exception description
+         *
+         * @exception std::invalid_argument - raised for quantum numbers that do not meet the required @preconditions.
          *
          * @remarks Data used in Derek's (original) version: n = 4, l = 2, m = 1.
          *
@@ -81,21 +82,16 @@ namespace mangh::hydrogen
             check(n, l, m, s);
         }
 
-        static bool is_permissible(unsigned n, unsigned l, int m, double s)
-        {
-            return (0 < n) && (l < n) && (static_cast<unsigned>(abs(m)) <= l) && ((s == HALFSPIN) || (s == -HALFSPIN));
-        }
-
         static void check(unsigned n, unsigned l, int m, double s)
         {
-            if (!is_permissible(n, l, m, s))
-            {
-                const char* format = "Invalid quantum numbers :: n = %u :: l = %u :: m = %d :: s = %f";
-                std::size_t len = std::snprintf(nullptr, 0, format, n, l, m, s);
-                std::vector<char> buf(len + 1);
-                std::snprintf(&buf[0], buf.size(), format, n, l, m, s);
-                throw invalid_argument(std::string(buf.cbegin(), buf.cend() - 1));
-            }
+            if ((0 < n) && (l < n) && (static_cast<unsigned>(abs(m)) <= l) && ((s == HALFSPIN) || (s == -HALFSPIN)))
+                return;
+
+            const char* format = "Invalid quantum numbers :: n = %u :: l = %u :: m = %d :: s = %f";
+            std::size_t len = std::snprintf(nullptr, 0, format, n, l, m, s);
+            std::vector<char> buf(len + 1);
+            std::snprintf(&buf[0], buf.size(), format, n, l, m, s);
+            throw std::invalid_argument(std::string(buf.cbegin(), buf.cend() - 1));
         }
 
         ///////////////////////////////////////////////////////////////////
@@ -104,13 +100,14 @@ namespace mangh::hydrogen
         ///
 
         /**
-         * @brief Normalizing factor for the radial part (Rnl) of the wave function in the (n,l) state.
-         * 
+         * @brief Normalizing factor for the radial part (Rn,l) of the wave function in the (n,l) state.
+         *
          * @param n - principal quantum number,
          * @param l - azimutha quantum number,
          * @param a0 - Bohr radius
-         * 
-         * @returns numeral_t 
+         *
+         * @returns Rn,l() normalizing factor.
+         *
          */
         static number_t Rnl_normalizing_factor(unsigned n, unsigned l, number_t a0)
         {
@@ -123,11 +120,13 @@ namespace mangh::hydrogen
 
         /**
          * @brief Radial part Rn,l(r) of the wave function (not ortho-normalized).
-         * @details Rn,l(ρ) = e^(-ρ) * (2ρ)^l * L[n-l-1,2l+1](2ρ).
-         * 
-         * @param rho - normalized radial distance from the nucleus: ρ = r / (n * a0).
+         *
+         * Rn,l(ρ) = e^(-ρ/n) * (2ρ/n)^l * L\[n-l-1, 2l+1\](2ρ/n).
+         *
          * @param rho - normalized radial distance from the nucleus: ρ = r / a0.
+         *
          * @returns The value of the radial function Rn,l(ρ).
+         * 
          */
         number_t Rnl(number_t rho) const
         {
@@ -139,10 +138,12 @@ namespace mangh::hydrogen
 
         /**
          * @brief Angular part Yl,m(θ,φ) of the wave function (spherical harmonics).
-         * @details Yl,m(θ,φ) = Pl,m(cos⁡ φ) * e^imθ.
-         * 
-         * @param theta - azimuthal angle θ (the angle in the xy-plane from the x-axis with 0 ≤ θ < 2π),
-         * @param phi - polar angle φ (the angle from the positive z-axis with 0 ≤ φ ≤ π),
+         *
+         * Yl,m(θ,φ) = Pl,m(cos⁡ φ) * e^imθ.
+         *
+         * @param theta - azimuthal angle θ (the angle in the XY-plane from the X-axis with 0 ≤ θ < 2π),
+         * @param phi - polar angle φ (the angle from the positive Z-axis with 0 ≤ φ ≤ π),
+         *
          * @returns The value of the spherical harmonic Yl,m(θ,φ).
          *
          */

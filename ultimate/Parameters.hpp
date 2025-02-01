@@ -27,10 +27,36 @@ namespace mangh::hydrogen
         /// @brief Mass of particle.
         const number_t mp;
 
-        /// @brief Potential constant (???)
+        /// @brief Potential energy constant.
+        ///
+        /// Term for the potential energy of the electron in the electrostatic field of the proton:
+        ///
+        ///   - V(r) = -1 / (4·π·ε0) · Z·e^2 / r
+        ///
+        /// where:
+        /// 
+        ///   - ε0 is the permittivity of the vacuum,
+        /// 
+        ///   - Z is the atomic number (number of protons in the nucleus),
+        /// 
+        ///   - e is the elementary charge (charge of an electron),
+        /// 
+        ///   - r is the distance of the electron from the nucleus.
+        ///
         const number_t kp;
 
-        /// @brief Constant in energy level equation (???).
+        /// @brief Energy constant (negative value of Rydberg's energy unit).
+        ///
+        /// The energy levels of hydrogen-like atoms:
+        ///
+        ///   - En = -Rh / n^2
+        ///
+        /// where:
+        ///
+        ///   - n is the principal quantum number,
+        ///
+        ///   - Rh is the Rydberg's energy unit (Rh = 2.18·10^-18 J).
+        ///
         const number_t ke;
 
         ///////////////////////////////////////////////////////////////////
