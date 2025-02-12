@@ -4,7 +4,6 @@
 #include <cmath>
 #include <stdexcept>
 #include <string>
-#include <vector>
 
 #include "numbers.hpp"
 #include "polynomials.hpp"
@@ -23,32 +22,53 @@ namespace mangh::hydrogen
     {
         ///////////////////////////////////////////////////////////////////
         ///
-        ///     Constants
+        ///     Physical Constants
         ///
 
-        static constexpr double HALFSPIN = 1.0 / 2.0;
+        // h    6.62607015e-34         [J/Hz]  Planck const
+        // ℏ    1.054571817e−34        [J*s]   Planck const reduced ℏ = h/2π
+        // c    299792458              [m/s]   Speed of light
+        // ε0   8.8541878188e-12       [F/m]   Vacuum permittivity constant
+
+        // me   9.1093837139e-31       [kg]    Mass of electron
+        // mp   1.67262192595e-27      [kg]    Mass of proton
+        // e    1.602176634e-19        [C]     Elementary charge
+
+        // α    0.0072973525643(11)    []      Fine structure constant = e^2 / (4·π·ε0·ℏ·c)
+        // a0   5.291772105443463e-11  [m]     Bohr radius = 4*π*ε0*ℏ^2 / (me*e^2)
+        // μ    9.10442528891677e-31   [kg]    Reduced mass of the electron–proton system = me * mp / (me + mp)
+        // ra0  5.294654094605935e-11  [m]     Bohr radius reduced for the reduced mass of the electron-proton system = (me / μ) * a0
 
         ///////////////////////////////////////////////////////////////////
         ///
         ///     Properties
         ///
 
-        /// @brief Principal quantum number (represents the electron's energy level and relative size of the orbital)
+        /// @brief Principal quantum number
+        /// (represents the electron's energy level and relative size of the orbital).
         /// @pre: 0 < n.
         const unsigned n;
 
-        /// @brief Azimuthal quantum number (relates to the shape of the atomic orbital).
+        /// @brief Azimuthal quantum number
+        /// (relates to the shape of the atomic orbital).
         /// @pre: 0 <= l < n.
         const unsigned l;
 
-        /// @brief Magnetic quantum number (specifies the orientation of the orbital in space).
+        /// @brief Magnetic quantum number
+        /// (specifies the orientation of the orbital in space).
         /// @pre: -l <= m <= l.
         const int m;
 
-        /// @brief Spin quantum number (describes the electron's intrinsic spin).
-        /// @remarks In a hydrogen-like atom, the spin of an electron does not affect the spatial distribution of the electron cloud.
-        /// @pre: s == +1/2 || s == -1/2.
-        const double s;
+        /// @brief Bohr radius
+        /// reduced for the reduced mass of the electron-proton system.
+        const number_t ra0;
+
+        /// @brief Reduced Bohr radius multiplied n times =`(ra0 * n)`.
+        const number_t nra0;
+
+        /// @brief Normalizing factor
+        /// for the radial part `Rn,l` of the wave function.
+        const number_t radial_norm_factor;
 
         ///////////////////////////////////////////////////////////////////
         ///
@@ -62,37 +82,28 @@ namespace mangh::hydrogen
 
         /**
          * @brief QuantumState constructor.
+         * 
+         * @param n - principal quantum number `(n > 0)`,
+         * @param l - azimuthal number `(0 <= l < n)`,
+         * @param m - magnetic quantum number `(-l <= m <= l)`.
          *
-         * @param n - principal quantum number,
-         * @param l - azimuthal number,
-         * @param m - magnetic quantum number.
-         * @param s - spin quantum number.
-         *
-         * @exception std::invalid_argument - raised for quantum numbers that do not meet the required @preconditions.
-         *
-         * @remarks Data used in Derek's (original) version: n = 4, l = 2, m = 1.
-         *
+         * @exception std::invalid_argument - raised when arguments (n, l, m) do not meet the above conditions.
+         * 
          */
-        QuantumState(unsigned n, unsigned l, int m, double s = HALFSPIN)
-            : n(n)
-            , l(l)
-            , m(m)
-            , s(s)
+        QuantumState(int n, int l, int m)
+            : n(n > 0 ? n : throw std::invalid_argument(badQuantumNumbers))
+            , l(0 <= l && l < n ? l : throw std::invalid_argument(badQuantumNumbers))
+            , m(-l <= m && m <= l ? m : throw std::invalid_argument(badQuantumNumbers))
+            , ra0(1.0)
+            , nra0(ra0*n)
+            , radial_norm_factor(
+                std::sqrt(
+                    std::pow(2.0 / nra0, 3) * fact<number_t>(n - l - 1) / 2.0 / n / fact<number_t>(n + l)
+                )
+            )
         {
-            check(n, l, m, s);
         }
 
-        static void check(unsigned n, unsigned l, int m, double s)
-        {
-            if ((0 < n) && (l < n) && (static_cast<unsigned>(abs(m)) <= l) && ((s == HALFSPIN) || (s == -HALFSPIN)))
-                return;
-
-            const char* format = "Invalid quantum numbers :: n = %u :: l = %u :: m = %d :: s = %f";
-            std::size_t len = std::snprintf(nullptr, 0, format, n, l, m, s);
-            std::vector<char> buf(len + 1);
-            std::snprintf(&buf[0], buf.size(), format, n, l, m, s);
-            throw std::invalid_argument(std::string(buf.cbegin(), buf.cend() - 1));
-        }
 
         ///////////////////////////////////////////////////////////////////
         ///
@@ -100,77 +111,107 @@ namespace mangh::hydrogen
         ///
 
         /**
-         * @brief Normalizing factor for the radial part (Rn,l) of the wave function in the (n,l) state.
+         * @brief The normalized radial part of the wave function (aka the `Rn,l(r)` function).
          *
-         * @param n - principal quantum number,
-         * @param l - azimutha quantum number,
-         * @param a0 - Bohr radius
+         * - `Rn,l(r) = e^(-ρ/n) · (2ρ/n)^l · L_n-l-1_2l+1(2ρ/n)`
          *
-         * @returns Rn,l() normalizing factor.
+         * - `ρ = r / nra0` - normalized radial distance from the nucleus.
          *
-         */
-        static number_t Rnl_normalizing_factor(unsigned n, unsigned l, number_t a0)
-        {
-            return std::sqrt(
-                std::pow(2.0 / n / a0, 3) *
-                fact<number_t>(n - l - 1) /
-                2.0 / n / fact<number_t>(n + l)
-            );
-        }
-
-        /**
-         * @brief Radial part Rn,l(r) of the wave function (not ortho-normalized).
+         * @param r - radial distance from the nucleus.
          *
-         * Rn,l(ρ) = e^(-ρ/n) * (2ρ/n)^l * L\[n-l-1, 2l+1\](2ρ/n).
-         *
-         * @param rho - normalized radial distance from the nucleus: ρ = r / a0.
-         *
-         * @returns The value of the radial function Rn,l(ρ).
+         * @returns The value of the radial function for the argument `r` i.e. `Rn,l(r)`.
          * 
          */
-        number_t Rnl(number_t rho) const
+        number_t Radial(number_t r) const
         {
-            return
-                exp(-rho / n) *
-                pow(2 * rho / n, l) * 
-                assoc_laguerre(n - l - 1, 2 * l + 1, 2 * rho / n);
+            auto rho = r / nra0;
+            return radial_norm_factor * exp(-rho) * pow(2 * rho, l) *  assoc_laguerre(2 * l + 1, n - l - 1, 2 * rho);
         }
 
+        number_t YlmAssocLegPol(number_t x) const { return ylm_assoc_legendre(l, m, x); }
+		number_t AssocLegPol(number_t x) const { return assoc_legendre(l, m, x); }
+
         /**
-         * @brief Angular part Yl,m(θ,φ) of the wave function (spherical harmonics).
+         * @brief Angular part of the wave function (aka the `Yl,m(θ,φ)` spherical harmonic function).
          *
-         * Yl,m(θ,φ) = Pl,m(cos⁡ φ) * e^imθ.
+         * - `Yl,m(θ,φ) = Pl,m(cosθ) · e^(imϕ)`.
          *
-         * @param theta - azimuthal angle θ (the angle in the XY-plane from the X-axis with 0 ≤ θ < 2π),
-         * @param phi - polar angle φ (the angle from the positive Z-axis with 0 ≤ φ ≤ π),
+         * @param theta - polar angle 0 ≤ θ ≤ π (from the positive Z axis),
+         * @param phi - azimuthal angle 0 ≤ ϕ < 2π (from the X-axis, in the XY-plane).
          *
-         * @returns The value of the spherical harmonic Yl,m(θ,φ).
-         *
+         * @returns The value of the angular function for the arguments `θ`, `φ` i.e. `Yl,m(θ,φ)`.
+         * 
+         * @remarks The calculation uses the relationship:
+         * 
+         * - `Yl,-m(θ,φ) = (-1)^m · conj(Yl,m(θ,φ))`
+         * 
+         * taken from the book Numerical Recipes in C++
+         * (chapter 6.7: Spherical Harmonics, equation 6.7.3).
+         * 
          */
-        complex_t Ylm(number_t theta, number_t phi) const
+        complex_t Angular(number_t theta, number_t phi) const
         {
-            unsigned mm = (m < 0) ? -m : m;
+            // unsigned M = (m < 0) ? -m : m;
+            // complex_t ylm = 
+            //     ylm_assoc_legendre(l, M, cos(theta)) * 
+            //     complex_t{ cos(M * phi), sin(M * phi) };
+            // return (m >= 0) ? ylm : (M & 1) ? -conj(ylm) : conj(ylm);
 
-            complex_t ylm = ylm_assoc_legendre(l, mm, cos(phi)) *
-                complex_t{ cos(mm * theta), sin(mm * theta) };
+            // unsigned M = (m < 0) ? -m : m;
+            // complex_t phase{ cos(M * phi), sin(M * phi) };
+            // return
+            //     ylm_assoc_legendre(l, M, cos(theta)) * 
+            //         ((m >= 0) ? phase :
+            //             (M & 1) ? -phase :
+            //                 conj(phase));
 
-            return (m >= 0) ? ylm : (mm & 1) ? -conj(ylm) : conj(ylm);
+            // unsigned M = (m < 0) ? -m : m;
+            // complex_t phase{ cos(M * phi), sin(M * phi) };
+            // return
+            //     ylm_assoc_legendre(l, M, cos(theta)) * 
+            //         ((m >= 0) ? phase :
+            //         ((M & 1) ? -1 : 1)) * conj(phase);  // pow(-1, M) * conj(phase));
+
+            // unsigned M = (m < 0) ? -m : m;
+            // number_t Condon_Shortley_factor = M & 1 ? -1. : 1.;
+            // complex_t phase{ cos(M * phi), sin(M * phi) };
+            // return ylm_assoc_legendre(l, M, cos(theta)) *
+            //         ((m >= 0) ? phase : (Condon_Shortley_factor * conj(phase)));
+
+            unsigned M = (m < 0) ? -m : m;
+
+            complex_t phase{ cos(M * phi), sin(M * phi) };
+            if (m < 0)
+            {
+                phase = M & 1 ? -conj(phase) : conj(phase);
+            }
+
+            return ylm_assoc_legendre(l, M, cos(theta)) * phase;
         }
 
         /**
-         * @brief Normalized wave function Ψn,l,m(ρ,θ,φ) = Rn,l(ρ) * Yl,m(θ, φ).
+         * @brief Normalized wave function.
          *
-         * @param rho - normalized radial distance from the nucleus: ρ = r / (n * a0).
-         * @param theta - azimuthal angle θ (the angle in the XY-plane from the X-axis with 0 ≤ θ < 2π),
-         * @param phi - polar angle φ (the angle from the positive Z-axis with 0 ≤ φ ≤ π),
+         * - `Ψn,l,m(r,θ,φ) = Rn,l(r) * Yl,m(θ, φ)`.
+         *
+         * @param r - radial distance from the nucleus,
+         * @param theta - polar angle 0 ≤ θ ≤ π (from the positive Z axis),
+         * @param phi - azimuthal angle 0 ≤ ϕ < 2π (from the X-axis, in the XY-plane).
          *
          * @returns The value of the wave function.
          *
          */
-        complex_t WaveFunction(number_t rho, number_t theta, number_t phi) const
+        complex_t WaveFunction(number_t r, number_t theta, number_t phi) const
         {
-            return Rnl_normalizing_factor(n, l, 1.0) * Rnl(rho) * Ylm(theta, phi);
+            return Radial(r) * Angular(theta, phi);
         }
+ 
+    private:
+
+        static constexpr const char * badQuantumNumbers
+        {
+            "Quantum numbers (n, l, m) do not meet the conditions: n > 0,  0 <= l < n, -l <= m <= l." 
+        };
     };
 }
 

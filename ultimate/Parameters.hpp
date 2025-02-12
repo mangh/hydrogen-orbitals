@@ -18,9 +18,6 @@ namespace mangh::hydrogen
         ///     Properties
         ///
 
-        /// @brief Bohr radius.
-        const number_t a0;
-
         /// @brief Planck constant.
         const number_t h;
 
@@ -42,7 +39,7 @@ namespace mangh::hydrogen
         ///   - e is the elementary charge (charge of an electron),
         /// 
         ///   - r is the distance of the electron from the nucleus.
-        ///
+        /// 
         const number_t kp;
 
         /// @brief Energy constant (negative value of Rydberg's energy unit).
@@ -79,9 +76,8 @@ namespace mangh::hydrogen
          * @param ke - Constant in energy level equation (???).
          *
          */
-        Parameters(number_t a0, number_t h, number_t mp, number_t kp, number_t ke)
-            : a0(a0)
-            , h(h)
+        Parameters(number_t h, number_t mp, number_t kp, number_t ke)
+            : h(h)
             , mp(mp)
             , kp(kp)
             , ke(ke)
