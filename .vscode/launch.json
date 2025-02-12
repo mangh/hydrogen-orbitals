@@ -8,18 +8,18 @@
             "type": "lldb",
             "request": "launch",
             "name": "Debug",
-            "program": "${workspaceFolder}/build/refined/refined.exe",
+            "program": "${workspaceFolder}/build/ultimate/ultimate.exe",
             "args": [],
-            "cwd": "${workspaceFolder}/refined/results"
+            "cwd": "${workspaceFolder}/ultimate/results"
         },
         {
             "name": "Visualize",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/refined/visualize_data.py",
+            "program": "${workspaceFolder}/ultimate/visualize_data.py",
             "console": "integratedTerminal",
             "args": [],
-            "cwd": "${workspaceFolder}/refined/results"
+            "cwd": "${workspaceFolder}/ultimate/results"
         }
     ]
 }
