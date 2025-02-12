@@ -4,7 +4,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from numpy import *
 
 grid_data_file = 'grid_data.txt'
-nr, ntheta, nphi, max_pd, max_real = np.genfromtxt(grid_data_file, unpack=True)
+nr, nphi, ntheta, max_pd, max_real = np.genfromtxt(grid_data_file, unpack=True)
 
 nr = int(nr)
 ntheta = int(ntheta)

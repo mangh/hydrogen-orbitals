@@ -30,7 +30,6 @@ int main()
 
     Parameters params
     {
-        1.0,   // a0_ - Bohr radius,
         1.0,   // h_  - Planck constant (???),
         1.0,   // mp_ - mass of particle,
         1.0,   // kp_ - potential constant (???),
@@ -39,15 +38,15 @@ int main()
 
     Mesh mesh
     {
-        linspace<number_t>{ 0.0, 40.0, 200 },       //  radial coordinates
-        linspace<number_t>{ 0.0, 2.0 * PI, 40 },    //  azimuthal coordinates
-        linspace<number_t>{ 0.0, PI, 20 }		    //  polar coordinates
+        linspace<number_t>{ 0.0, 40.0, 200 },       //  radial coordinates (r)
+        linspace<number_t>{ 0.0, PI, 20 },		    //  polar coordinates (θ)
+        linspace<number_t>{ 0.0, 2.0 * PI, 40 }     //  azimuthal coordinates (ϕ)
     };
 
     // mesh.export_psi("psi.txt", params, qs, radii, thetas, phis);
 
     /* Compute psi */
-    mesh.compute_wave_function(params, qs);
+    mesh.compute_wave_function(qs);
 
     /* Normalize psi */
     mesh.normalize_psi();
@@ -79,8 +78,8 @@ int main()
     /* Export psi im data at n_phi/2 */
     mesh.export_data_phi_2_im("data_im_phi_2.txt");
 
-    /* Verify solution numerically */
-    mesh.verify_solution(params, qs/* , radii, thetas, phis */);
+    ///* Verify solution numerically */
+    //mesh.verify_solution(params, qs/* , radii, thetas, phis */);
 
     // char* prev_loc = std::setlocale(LC_ALL, nullptr);
     // std::setlocale(LC_ALL, "pl_PL.UTF-8");
@@ -92,8 +91,8 @@ int main()
     /* Print some results */
     for(std::size_t i = 0; i < mesh.radial.size(); ++i)
     {
-        std::size_t theta = mesh.theta.size() / 4;
-        std::size_t phi = mesh.phi.size() / 2;
+        std::size_t theta = mesh.phi.size() / 4;
+        std::size_t phi = mesh.theta.size() / 2;
         std::cout
             << "real psi[" << i << "][" << theta << "][" << phi << "]: " << std::fixed << mesh.psi[i][theta][phi].real()
             << ", im psi[" << i << "][" << theta << "][" << phi << "]: " << std::fixed << mesh.psi[i][theta][phi].imag()
@@ -136,7 +135,7 @@ int main()
         << std::scientific
         << std::setprecision(max_precision)
         << std::fixed
-        << "error in percentage : " << mesh.error << std::endl
+        //<< "error in percentage : " << mesh.error << std::endl
         << "normalization constant : " << std::sqrt(mesh.total_probability) << std::endl;
 
     // if (const char* loc = std::setlocale(LC_ALL, prev_loc/*.c_str()*/))
