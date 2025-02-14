@@ -132,67 +132,37 @@ namespace mangh::hydrogen
 		number_t AssocLegPol(number_t x) const { return assoc_legendre(l, m, x); }
 
         /**
-         * @brief Angular part of the wave function (aka the `Yl,m(θ,φ)` spherical harmonic function).
+         * @brief Angular part of the wave function (aka the `Yl,m(θ,ϕ)` spherical harmonic function).
          *
-         * - `Yl,m(θ,φ) = Pl,m(cosθ) · e^(imϕ)`.
+         * - `Yl,m(θ,ϕ) = Pl,m(cosθ) · e^(imϕ)`.
          *
          * @param theta - polar angle 0 ≤ θ ≤ π (from the positive Z axis),
          * @param phi - azimuthal angle 0 ≤ ϕ < 2π (from the X-axis, in the XY-plane).
          *
-         * @returns The value of the angular function for the arguments `θ`, `φ` i.e. `Yl,m(θ,φ)`.
+         * @returns The value of the angular function for the arguments `θ`, `ϕ` i.e. `Yl,m(θ,ϕ)`.
          * 
-         * @remarks The calculation uses the relationship:
+         * @remarks The calculation uses the relationship (6.7.3):
          * 
-         * - `Yl,-m(θ,φ) = (-1)^m · conj(Yl,m(θ,φ))`
+         * - `Yl,-m(θ,ϕ) = (-1)^m · conj(Yl,m(θ,ϕ))`
          * 
-         * taken from the book Numerical Recipes in C++
-         * (chapter 6.7: Spherical Harmonics, equation 6.7.3).
+         * from Numerical Recipes in C++, Chapter 6.7, Spherical Harmonics.
          * 
          */
         complex_t Angular(number_t theta, number_t phi) const
         {
-            // unsigned M = (m < 0) ? -m : m;
-            // complex_t ylm = 
-            //     ylm_assoc_legendre(l, M, cos(theta)) * 
-            //     complex_t{ cos(M * phi), sin(M * phi) };
-            // return (m >= 0) ? ylm : (M & 1) ? -conj(ylm) : conj(ylm);
-
-            // unsigned M = (m < 0) ? -m : m;
-            // complex_t phase{ cos(M * phi), sin(M * phi) };
-            // return
-            //     ylm_assoc_legendre(l, M, cos(theta)) * 
-            //         ((m >= 0) ? phase :
-            //             (M & 1) ? -phase :
-            //                 conj(phase));
-
-            // unsigned M = (m < 0) ? -m : m;
-            // complex_t phase{ cos(M * phi), sin(M * phi) };
-            // return
-            //     ylm_assoc_legendre(l, M, cos(theta)) * 
-            //         ((m >= 0) ? phase :
-            //         ((M & 1) ? -1 : 1)) * conj(phase);  // pow(-1, M) * conj(phase));
-
-            // unsigned M = (m < 0) ? -m : m;
-            // number_t Condon_Shortley_factor = M & 1 ? -1. : 1.;
-            // complex_t phase{ cos(M * phi), sin(M * phi) };
-            // return ylm_assoc_legendre(l, M, cos(theta)) *
-            //         ((m >= 0) ? phase : (Condon_Shortley_factor * conj(phase)));
-
             unsigned M = (m < 0) ? -m : m;
 
-            complex_t phase{ cos(M * phi), sin(M * phi) };
-            if (m < 0)
-            {
-                phase = M & 1 ? -conj(phase) : conj(phase);
-            }
+            complex_t ylm = 
+                complex_t{ cos(M * phi), sin(M * phi) } *
+                ylm_assoc_legendre(l, M, cos(theta));
 
-            return ylm_assoc_legendre(l, M, cos(theta)) * phase;
+            return (m >= 0) ? ylm : (M & 1) ? -conj(ylm) : conj(ylm);
         }
 
         /**
          * @brief Normalized wave function.
          *
-         * - `Ψn,l,m(r,θ,φ) = Rn,l(r) * Yl,m(θ, φ)`.
+         * - `Ψn,l,m(r,θ,ϕ) = Rn,l(r) * Yl,m(θ,ϕ)`.
          *
          * @param r - radial distance from the nucleus,
          * @param theta - polar angle 0 ≤ θ ≤ π (from the positive Z axis),
