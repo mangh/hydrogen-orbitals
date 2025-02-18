@@ -66,22 +66,67 @@ namespace mangh::math
     }
 
     /**
-     * @brief Associated Legendre polynomial (~Pm,l), RENORMALIZED for use with spherical harmonics (Yl,m).
+     * @brief Calculates the normalizing factor for spherical harmonics (Yl,m) or,
+     * alternatively, for the associated Legendre polynomials (Pm,l) used in the definition of Yl,m.
+     *
+     * @tparam T - floating point type of the argument.
      * 
+     * @param l - the degree of the polynomial (0 <= l),
+     * @param m - the order of the polynomial (0 <= m <= l),
+     *
+     * @returns Normalizing factor according to the formula: `sqrt[ (2·l+1)/4π · (l-m)!/(l+m)! ]`.
+     *
+     * @exception std::invalid_argument - when the arguments (l,m) do not meet the prerequisites.
+     * 
+     */
+    template<typename T>
+    T ylm_norm_factor(unsigned l, unsigned m)
+    {
+        static_assert(
+            std::is_floating_point<T>::value,
+            "T ylm_norm_factor(unsigned l, unsigned m): template requires a floating-point type parameter T."
+        );
+
+        static constexpr T PI = mangh::math::PI_V<T>;
+
+        if (m > l)
+            throw std::invalid_argument(
+                "T ylm_norm_factor(unsigned l, unsigned m): arguments (l, m) do not meet the condition: l >= m."
+            );
+
+        T prod = 1.0;
+        for (unsigned j = l - m + 1; j <= l + m; ++j)
+            prod *= j;
+
+        return std::sqrt((2.0 * l + 1) / 4.0 / PI / prod);
+    }
+
+    /**
+     * @brief Associated Legendre polynomial renormalized for use with spherical harmonics
+     * (i.e., a polynomial with the normalization factor of `√[ (2·l+1)/4π · (l-m)!/(l+m)! ]`
+     * and also the Condon-Shortley factor of `(-1)^m)`.
+     *                                      
      * @tparam T - floating point type of the argument.
      * 
      * @param l - the degree of the polynomial (0 <= l),
      * @param m - the order of the polynomial (0 <= m <= l),
      * @param x - the argument (-1 <= x <= 1).
      * 
-     * @returns The value of the ~Pm,l polynomial for the argument x.
+     * @returns The value of the renormalized Legendre polynomial
+     * of degree `l` and order `m` for the argument `x`.
      * 
      * @exception std::invalid_argument - when arguments do not meet the prerequisites.
      * 
-     * @remarks See: 
-     *   Numerical Recipes in C++, 6.7. Spherical Harmonics, equation (6.7.8).
-     *   Algorithm "plegendre" (it converges better than the algorithm for
-     *   the standard Legendre polynomial).
+     * @remarks The following is a `plegendre` algorithm (from the book
+     * Numerical Recipes in C++, chapter 6.7 Spherical Harmonics)
+     * that implements equation (6.7.8):
+     * 
+     * `P~m,l = √[ (2·l+1)/4π · (l-m)!/(l+m)! ] · Pm,l`
+     * 
+     * where Pm,l are ordinary Legendre polynomials defined by equation (6.7.4):
+     * 
+     * `Pm,l(x) = (-1)^m · (1 - x²)^(m/2) · d^m/dx^m Pl(x)`.
+     * 
      */
     template<typename T>
     T ylm_assoc_legendre(unsigned l, unsigned m, T x)
@@ -103,7 +148,7 @@ namespace mangh::math
 
         static constexpr T PI = mangh::math::PI_V<T>;
 
-        // compute ~Pm,m
+        // compute P~m,m
         T Pmm = 1.0;
         if (m > 0)
         {
@@ -124,13 +169,13 @@ namespace mangh::math
         if (l == m)
             return Pmm;
 
-        // compute ~Pm,m+1
+        // compute P~m,m+1
         T oldfact = std::sqrt(2.0 * m + 3.0);
         T Pmmp1 = x * oldfact * Pmm;
         if (l == m+1)
             return Pmmp1;
 
-        // compute ~Pm,l (m+1 < l)
+        // compute P~m,l (m+1 < l)
         T Pll = 0.0;
         for (unsigned ll = m + 2; ll <= l; ll++)
         {
@@ -145,41 +190,6 @@ namespace mangh::math
     }
 
     /**
-     * @brief Normalizing factor for the ylm_assoc_legendre polynomials.
-     * 
-     * @tparam T - floating point type of the argument.
-     * 
-     * @param l - the degree of the polynomial (0 <= l),
-     * @param m - the order of the polynomial (0 <= m <= l),
-     * 
-     * @exception std::invalid_argument - when arguments do not meet the prerequisites.
-     * 
-     * @returns The factor sqrt((2l+1) / 4π · (l-m)! / (l+m)!)
-     * required to get the standard (orthonormal) assoc_legendre polynomial
-     * from the ylm_assoc_legendre polynomial.
-     *
-     */
-    template<typename T>
-    T ylm_norm_factor(unsigned l, unsigned m)
-    {
-        static_assert(
-            std::is_floating_point<T>::value,
-            "T ylm_norm_factor(unsigned l, unsigned m): template requires a floating-point type parameter T."
-        );
-
-        static constexpr T PI = mangh::math::PI_V<T>;
-
-        if (m > l)
-            throw std::invalid_argument(
-                "T ylm_norm_factor(unsigned l, unsigned m): arguments (l, m) do not meet the condition: l >= m."
-            );
-
-        T prod = 1.0;
-        for (unsigned j = l - m + 1; j <= l + m; ++j) prod *= j;
-        return std::sqrt((2.0 * l + 1) / 4.0 / PI / prod);
-    }
-
-    /**
      * @brief Associated Legendre polynomial Pm,l(x) (orthonormal).
      * 
      * @tparam T - floating point type of the argument.
@@ -190,10 +200,10 @@ namespace mangh::math
      * 
      * @exception std::invalid_argument - when arguments do not meet the prerequisites.
      * 
-     * @returns Value of the associated Legendre polynomial Pm,l(x).
+     * @returns Value of the associated Legendre polynomial (i.e. Pm,l(x)).
      * 
-     * @remarks See: Numerical Recipes in C++, 6.7. Spherical Harmonics, equation (6.7.4),
-     * algorithm "plgndr". The function may overflow for m >= 80, or even sooner if l >> m.
+     * @remarks The function may overflow for m >= 80, or even sooner if l >> m.
+     * @remarks See: Numerical Recipes in C++, 6.7. Spherical Harmonics, equation (6.7.4), algorithm "plgndr".
      * 
      */
     template<typename T>
