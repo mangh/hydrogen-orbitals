@@ -24,7 +24,7 @@ namespace mangh::math
             std::is_floating_point<T>::value,
             "T factorial(n): function template requires a floating-point type parameter T."
         );
-        return std::exp(std::lgamma(n + 1));
+        return std::tgamma(n + 1);
     }
 
     /**
