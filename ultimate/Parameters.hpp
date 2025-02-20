@@ -1,11 +1,9 @@
 #ifndef MANGH_HYDROGEN_PARAMETERS_HPP
 #define MANGH_HYDROGEN_PARAMETERS_HPP
 
-#include "numbers.hpp"
+#include "Numbers.hpp"
 
-using namespace mangh::math;
-
-namespace mangh::hydrogen
+namespace mangh { namespace hydrogenium
 {
     /**
      * @brief Physical parameters of the hydrogen atom.
@@ -84,6 +82,6 @@ namespace mangh::hydrogen
         {
         }
     };
-}
+}}
 
 #endif /* !MANGH_HYDROGEN_PARAMETERS_HPP */

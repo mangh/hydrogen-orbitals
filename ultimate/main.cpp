@@ -12,10 +12,10 @@
 #include "Parameters.hpp"
 #include "QuantumState.hpp"
 #include "Mesh.hpp"
-#include "linspace.hpp"
+#include "math/linspace.hpp"
 
 // using namespace mangh::math;
-using namespace mangh::hydrogen;
+using namespace mangh::hydrogenium;
 
 int main()
 {

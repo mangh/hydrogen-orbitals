@@ -1,13 +1,16 @@
-#ifndef MANGH_HYDROGEN_QUANTUM_STATE_HPP
-#define MANGH_HYDROGEN_QUANTUM_STATE_HPP
+#ifndef MANGH_HYDROGENIUM_STATE_HPP
+#define MANGH_HYDROGENIUM_STATE_HPP
 
-#include <cmath>
 #include <stdexcept>
 
-#include "numbers.hpp"
-#include "polynomials.hpp"
+#include "math/assoc_legendre.hpp"
+#include "math/assoc_laguerre.hpp"
+#include "math/factorial.hpp"
+#include "math/spherical_harmonic.hpp"
 
-namespace mangh::hydrogen
+#include "Numbers.hpp"
+
+namespace mangh { namespace hydrogenium
 {
     using namespace mangh::math;
     using std::invalid_argument;
@@ -62,10 +65,6 @@ namespace mangh::hydrogen
             , l(0 <= l && l < n ? l : throw std::invalid_argument(badQuantumNumbers))
             , m(-l <= m && m <= l ? m : throw std::invalid_argument(badQuantumNumbers))
             // auxiliary variables
-            , M(m < 0 ? -m : m)
-            , angular_factor(
-                std::pow(-1.0, M)
-            )
             , ra0(1.0)
             , nra0(ra0 * n)
             , radial_factor(
@@ -96,7 +95,11 @@ namespace mangh::hydrogen
         number_t Radial(number_t r) const
         {
             auto rho = r / nra0;
-            return radial_factor * std::exp(-rho) * std::pow(2 * rho, l) *  assoc_laguerre(2 * l + 1, n - l - 1, 2 * rho);
+            return
+                radial_factor * 
+                std::exp(-rho) * 
+                std::pow(2 * rho, l) *
+                assoc_laguerre(2 * l + 1, n - l - 1, 2 * rho);
         }
 
         number_t YlmAssocLegPol(number_t x) const { return ylm_assoc_legendre(l, m, x); }
@@ -104,7 +107,7 @@ namespace mangh::hydrogen
         number_t AssocLegPol(number_t x) const { return assoc_legendre(l, m, x); }
 
         /**
-         * @brief Angular part of the wave function (otherwise known as spherical harmonics Yl,m(θ,ϕ)).
+         * @brief Angular part of the wave function (aka spherical harmonics Yl,m(θ,ϕ)).
          *
          * - Yl,m(θ,ϕ) = Pl,m(cosθ) · e^(imϕ).
          *
@@ -120,16 +123,10 @@ namespace mangh::hydrogen
          * from Numerical Recipes in C++, Chapter 6.7, Spherical Harmonics.
          * 
          */
-         complex_t Angular(number_t theta, number_t phi) const
-         {
-            complex_t phase{ 
-                std::cos(M * phi),
-                std::sin(M * phi)
-            };
-            return
-                ylm_assoc_legendre(l, M, std::cos(theta)) *
-                ((m >= 0) ? phase : angular_factor * std::conj(phase));
-         }
+        complex_t Angular(number_t theta, number_t phi) const
+        {
+            return spherical_harmonic(l, m, theta, phi);
+        }
  
         /**
          * @brief Normalized wave function.
@@ -167,16 +164,6 @@ namespace mangh::hydrogen
  
     private:
 
-        /// @brief Magnetic number absolute value (= abs(m)).
-        const unsigned M;
- 
-        /// @brief Angular conjugate factor (-1)^M in formula (6.7.3):
-        ///
-        ///     Yl,-m(θ,ϕ) = (-1)^m · conj(Yl,m(θ,ϕ))
-        ///
-        /// in Numerical Recipes in C++, Chapter 6.7, Spherical Harmonics.
-        const number_t angular_factor;
-
         /// @brief Reduced Bohr radius
         /// for the reduced mass of the electron-proton system.
         const number_t ra0;
@@ -191,6 +178,6 @@ namespace mangh::hydrogen
         static constexpr const char * badQuantumNumbers =
             "Quantum numbers (n, l, m) do not meet the conditions: n > 0,  0 <= l < n, -l <= m <= l.";
     };
-}
+}}
 
-#endif /* !MANGH_HYDROGEN_QUANTUM_STATE_HPP */
+#endif /* !MANGH_HYDROGENIUM_STATE_HPP */

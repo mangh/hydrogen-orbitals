@@ -3,14 +3,16 @@
 
 #include <fstream>
 
-#include "numbers.hpp"
-#include "linspace.hpp"
-#include "array3d.hpp"
-#include "Parameters.hpp"
+#include "math/linspace.hpp"
+#include "Numbers.hpp"
+#include "Array3d.hpp"
+// #include "Parameters.hpp"
 #include "QuantumState.hpp"
 
-namespace mangh::hydrogen
+namespace mangh { namespace hydrogenium
 {
+    using namespace mangh::math;
+
     /**
      * @brief Data mesh (spherical coordinate grid)
      *
@@ -37,15 +39,13 @@ namespace mangh::hydrogen
         linspace<number_t> phi;
 
         /// @brief Wave function (Ψ).
-        array3d<complex_t> psi;
+        Array3d<complex_t> psi;
 
         /// @brief Maximum probability density value.
         number_t max_pd;
 
         /// @brief Maximum value of the real part of the wave function (Ψ).
         number_t max_real;
-
-        //number_t error;
 
         /// @brief Total probability (or normalizing factor) for the entire area covered by the coordinates (r, θ, φ).
         number_t total_probability;
@@ -63,9 +63,7 @@ namespace mangh::hydrogen
         /**
          * @brief Mesh constructor.
          *
-         * @param radial - radial coordinate vector,
-         * @param theta - polar coordinate vector,
-         * @param phi - azimuthal coordinate vector.
+         *
          */
         Mesh(const linspace<number_t>& radial,
              const linspace<number_t>& theta,
@@ -79,7 +77,6 @@ namespace mangh::hydrogen
 
             , max_pd(std::numeric_limits<number_t>::min())
             , max_real(std::numeric_limits<number_t>::min())
-            //, error(std::numeric_limits<number_t>::min())
             , total_probability(std::numeric_limits<number_t>::min())
         {
             for(auto& p : this->phi) p += phi.delta / 2.0;
@@ -409,6 +406,6 @@ namespace mangh::hydrogen
         //    error = 100.0 * error / ((radial.size() - 2) * (phi.size() - 2) * (theta.size() - 2));
         //}
     };
-}
+}}
 
 #endif /* !MANGH_HYDROGEN_SOLUTION_DATA_HPP */

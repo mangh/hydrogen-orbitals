@@ -6,14 +6,14 @@
 
 #include "cppfeatures.hpp"
 
-namespace mangh::math
+namespace mangh { namespace math
 {
     /**
      * @brief 3-dimensional array.
      * 
      */
     template<typename T>
-    struct array3d
+    struct Array3d
     {
         ///////////////////////////////////////////////////////////////////
         ///
@@ -33,17 +33,17 @@ namespace mangh::math
         /**
         * @brief No default constructor!
         */
-        array3d() = delete;
+        Array3d() = delete;
 
         /**
-         * @brief array3d constructor.
+         * @brief Array3d constructor.
          * 
          * @param pages  - the number of pages,
          * @param rows    - the number of rows (in a single page),
          * @param columns - the number of columns (in a single row).
          * 
          */
-        array3d(std::size_t pages, std::size_t rows, std::size_t columns)
+        Array3d(std::size_t pages, std::size_t rows, std::size_t columns)
             : m_page(pages)
         {
             for(std::size_t p = 0; p < pages; ++p)
@@ -112,6 +112,6 @@ namespace mangh::math
             return m_page[p][r][c];
         }
     };
-}
+}}
 
 #endif /* !MANGH_ARRAY3D_HPP */

@@ -3,7 +3,7 @@
 
 #include <vector>
 
-namespace mangh::math
+namespace mangh { namespace math
 {
 	/**
 	* @brief linspace (a vector of evenly spaced numbers of type T).
@@ -66,6 +66,6 @@ namespace mangh::math
 		{
 		}
 	};
-}
+}}
 
 #endif /* !MANGH_LINSPACE_HPP */
