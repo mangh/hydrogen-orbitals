@@ -127,6 +127,11 @@ namespace mangh { namespace hydrogenium
         {
             return spherical_harmonic(l, m, theta, phi);
         }
+
+        number_t AngularRealBasis(number_t theta, number_t phi) const
+        {
+            return spherical_real_basis(l, m, theta, phi);
+        }
  
         /**
          * @brief Normalized wave function.
