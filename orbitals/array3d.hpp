@@ -68,7 +68,7 @@ namespace mangh { namespace math
          * @param p - page index. 
          * @returns Data page (read-only) for the p-index.
          */
-        CONSTEXPR_SINCE_CXX20 std::vector<std::vector<T>>& operator[](std::size_t p) const
+        CONSTEXPR_SINCE_CXX20 const std::vector<std::vector<T>>& operator[](std::size_t p) const
         {
             assert(p < m_page.size());
             return m_page[p];
@@ -79,7 +79,7 @@ namespace mangh { namespace math
          * @param p - page index. 
          * @returns Data page (for writing) for the p-index.
          */
-        std::vector<std::vector<T>>& operator[](std::size_t p)
+        CONSTEXPR_SINCE_CXX20 std::vector<std::vector<T>>& operator[](std::size_t p)
         {
             assert(p < m_page.size());
             return m_page[p];
@@ -93,7 +93,7 @@ namespace mangh { namespace math
          * @param c - column index.
          * @returns Single data item (read-only) for the given indexes (p, r, c).
          */
-        CONSTEXPR_SINCE_CXX20 T& operator()(std::size_t p, std::size_t r, std::size_t c) const
+        CONSTEXPR_SINCE_CXX20 const T& operator()(std::size_t p, std::size_t r, std::size_t c) const
         {
             assert(p < m_page.size() && r < m_page[p].size() && c < m_page[p][r].size());
             return m_page[p][r][c];
@@ -107,7 +107,7 @@ namespace mangh { namespace math
          * @param c - column index.
          * @returns Single data item (writable) for the given indexes (p, r, c).
          */
-        T& operator()(std::size_t p, std::size_t r, std::size_t c)
+        CONSTEXPR_SINCE_CXX20 T& operator()(std::size_t p, std::size_t r, std::size_t c)
         {
             assert(p < m_page.size() && r < m_page[p].size() && c < m_page[p][r].size());
             return m_page[p][r][c];
