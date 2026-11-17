@@ -5,14 +5,20 @@
  *      Author: d-w-h
  */
 
+#include <cmath>
+#include <cstddef>
+#include <cstdlib>
 #include <ios>
 #include <iostream>
 #include <iomanip>
+#include <limits>
 
-#include "Parameters.hpp"
-#include "QuantumState.hpp"
-#include "Mesh.hpp"
+#include "parameters.hpp"
+#include "quantum_state.hpp"
+#include "mesh.hpp"
+#include "math/constants.hpp"
 #include "math/linspace.hpp"
+#include "numbers.hpp"
 
 // using namespace mangh::math;
 using namespace mangh::hydrogenium;

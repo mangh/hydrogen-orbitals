@@ -1,6 +1,7 @@
 #ifndef MANGH_HYDROGENIUM_STATE_HPP
 #define MANGH_HYDROGENIUM_STATE_HPP
 
+#include <cmath>
 #include <stdexcept>
 
 #include "math/assoc_legendre.hpp"
@@ -8,7 +9,7 @@
 #include "math/factorial.hpp"
 #include "math/spherical_harmonic.hpp"
 
-#include "Numbers.hpp"
+#include "numbers.hpp"
 
 namespace mangh { namespace hydrogenium
 {

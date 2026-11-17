@@ -1,6 +1,7 @@
 #ifndef MANGH_LINSPACE_HPP
 #define MANGH_LINSPACE_HPP
 
+#include <cstddef>
 #include <vector>
 
 namespace mangh { namespace math

@@ -1,6 +1,7 @@
 #ifndef MANGH_MATH_SPHERICAL_HARMONIC_HPP
 #define MANGH_MATH_SPHERICAL_HARMONIC_HPP
 
+#include <cmath>
 #include <complex>
 
 #include "assoc_legendre.hpp"
@@ -18,16 +19,16 @@ namespace mangh { namespace math
      * @returns The value of the spherical harmonic function Yl,m for the arguments (θ,ϕ).
      * 
      * @remarks The algorithm uses associated Legendre polynomials P~l,m,
-     * which include both the Condon-Shortley factor and the normalizing
-     * factor for spherical harmonics, i.e. the product:
-     * 
-     * `(-1)^m · sqrt[ (2·l+1)/4π · (l-m)!/(l+m)! ]`.
-     * 
-     * It uses also the relationship:
-     * 
-     * `Yl,-m(θ,ϕ) = (-1)^m · conj(Yl,m(θ,ϕ))`
-     * 
-     * See: Numerical Recipes in C++, Chapter 6.7, Spherical Harmonics.
+     * @remarks which include both the Condon-Shortley factor and the normalizing
+     * @remarks factor for spherical harmonics, i.e. the product:
+     * @remarks 
+     * @remarks     `(-1)^m · sqrt[ (2·l+1)/4π · (l-m)!/(l+m)! ]`.
+     * @remarks 
+     * @remarks It uses also the relationship:
+     * @remarks 
+     * @remarks     `Yl,-m(θ,ϕ) = (-1)^m · conj(Yl,m(θ,ϕ))`
+     * @remarks 
+     * @remarks See: Numerical Recipes in C++, Chapter 6.7, Spherical Harmonics.
      * 
      */
     template<typename T>

@@ -1,13 +1,20 @@
 #ifndef MANGH_HYDROGEN_SOLUTION_DATA_HPP
 #define MANGH_HYDROGEN_SOLUTION_DATA_HPP
 
+#include <cmath>
+#include <complex>
+#include <cstddef>
 #include <fstream>
+#include <limits>
+#include <ostream>
+#include <string>
 
+#include "math/constants.hpp"
 #include "math/linspace.hpp"
-#include "Numbers.hpp"
-#include "Array3d.hpp"
-// #include "Parameters.hpp"
-#include "QuantumState.hpp"
+#include "numbers.hpp"
+#include "array3d.hpp"
+// #include "parameters.hpp"
+#include "quantum_state.hpp"
 
 namespace mangh { namespace hydrogenium
 {
@@ -105,7 +112,7 @@ namespace mangh { namespace hydrogenium
                         if (c.real() > max_real)
                             max_real = c.real();
 
-                        if ((pd = norm(c)) > max_pd)
+                        if ((pd = std::norm(c)) > max_pd)
                             max_pd = pd;
                     }
                 }

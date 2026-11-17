@@ -32,10 +32,14 @@ project(
   DESCRIPTION "Visualization of the hydrogen atom orbitals using the analytical solution of the time independent Schrodinger equation for the hydrogen atom"
 )
 
+
+# C++ language standard to compile for
+set(CMAKE_CXX_STANDARD 20)
+
 # To avoid portability issues, language extensions (enabled by default)
 # are disabled before any target is created. This allows to stick to the
-# language standard such as "-std=c++17" instead of "-std=gnu++17" (which
-# is c++17 with GNU extensions):
+# language standard such as "-std=c++20" instead of "-std=gnu++20" (which
+# is c++20 with GNU extensions):
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Apps & libraries versioning:
@@ -72,8 +76,6 @@ message(DEBUG "Use Address Sanitizer: ${USE_ASAN}")
 
 #########
 # MSVC_RUNTIME option (for compilers targeting the MSVC ABI - other compilers ignore it):
-set(_msvc_runtime_doc "MSVC Runtime Library option for compilers targeting the MSVC ABI")
-
 # Address Sanitizer requires a static runtime library, but on Windows it defaults to MSVC's dynamic library.
 if(USE_ASAN)
   # Select the static MSVC runtime (for compilers targeting the MSVC ABI):
@@ -108,11 +110,5 @@ cmake_path(SET ROOT_DIR "${PROJECT_SOURCE_DIR}")
 #   TARGETS to BUILD
 #
 
-# # Original app (by derekharrison)
-# add_subdirectory ("original")
-
-# # Refined app (by mangh)
-# add_subdirectory ("refined")
-
-# Refined app (by mangh)
-add_subdirectory ("ultimate")
+# hydrogen orbitals app (by mangh)
+add_subdirectory ("orbitals")

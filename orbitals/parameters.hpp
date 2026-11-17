@@ -1,7 +1,7 @@
 #ifndef MANGH_HYDROGEN_PARAMETERS_HPP
 #define MANGH_HYDROGEN_PARAMETERS_HPP
 
-#include "Numbers.hpp"
+#include "numbers.hpp"
 
 namespace mangh { namespace hydrogenium
 {

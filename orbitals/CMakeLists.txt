@@ -2,7 +2,7 @@
 #   Original app by Derek Harrison
 #
 
-set(target "ultimate")
+set(target "orbitals")
 
 set(_source_files
   main.cpp

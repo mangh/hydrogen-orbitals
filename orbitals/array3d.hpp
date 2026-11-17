@@ -2,6 +2,7 @@
 #define MANGH_ARRAY3D_HPP
 
 #include <cassert>
+#include <cstddef>
 #include <vector>
 
 #include "cppfeatures.hpp"
