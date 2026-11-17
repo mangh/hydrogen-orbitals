@@ -18,7 +18,7 @@ namespace mangh { namespace hydrogenium
     using namespace mangh::math;
 
     /**
-     * @brief Data mesh (spherical coordinate grid)
+     * @brief Data grid (in spherical coordinates)
      *
      */
     struct Mesh
@@ -43,7 +43,7 @@ namespace mangh { namespace hydrogenium
         linspace<number_t> azimuthal;
 
         /// @brief Wave function (Ψ).
-        Array3d<complex_t> psi;
+        array3d<complex_t> psi;
 
         /// @brief Maximum probability density value.
         number_t max_pd;
@@ -118,7 +118,7 @@ namespace mangh { namespace hydrogenium
 
         void normalize_psi()
         {
-            static constexpr number_t M_PI = mangh::math::PI_V<number_t>;
+            static constexpr number_t PI = mangh::math::PI_V<number_t>;
 
             total_probability = 0.0;
 
@@ -128,7 +128,7 @@ namespace mangh { namespace hydrogenium
                 number_t rlo = radial[r] - radial.delta / 2.0;
                 number_t rhi = radial[r] + radial.delta / 2.0;
                 number_t probability_per_vol =
-                    2.0 / 3.0 * M_PI * (1 - cos(polar.delta / 2.0)) * (rhi * rhi * rhi - rlo * rlo * rlo) * norm(psi[r][0][0]);
+                    2.0 / 3.0 * PI * (1 - cos(polar.delta / 2.0)) * (rhi * rhi * rhi - rlo * rlo * rlo) * norm(psi[r][0][0]);
 
                 total_probability += probability_per_vol;
             }
@@ -153,7 +153,7 @@ namespace mangh { namespace hydrogenium
                 number_t rlo = radial[r] - radial.delta / 2.0;
                 number_t rhi = radial[r] + radial.delta / 2.0;
                 number_t probability_per_vol = 
-                    2.0 / 3.0 * M_PI * (1 - cos(polar.delta / 2.0)) * (rhi * rhi * rhi - rlo * rlo * rlo) * norm(psi[r][polar.size() - 1][0]);
+                    2.0 / 3.0 * PI * (1 - cos(polar.delta / 2.0)) * (rhi * rhi * rhi - rlo * rlo * rlo) * norm(psi[r][polar.size() - 1][0]);
                 total_probability += probability_per_vol;
             }
 
@@ -314,7 +314,7 @@ namespace mangh { namespace hydrogenium
     //    {
     //        static constexpr complex_t CZERO{ 0.0, 0.0 };
 
-    //        Array3d<complex_t> ratio(radial.size(), azimuthal.size(), polar.size());
+    //        array3d<complex_t> ratio(radial.size(), azimuthal.size(), polar.size());
 
     //        number_t alpha = params.h / (2.0 * params.mp);
     //        number_t E = params.ke / (qs.n * qs.n);

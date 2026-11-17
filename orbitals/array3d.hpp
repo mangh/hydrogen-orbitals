@@ -14,7 +14,7 @@ namespace mangh { namespace math
      * 
      */
     template<typename T>
-    struct Array3d
+    struct array3d
     {
         ///////////////////////////////////////////////////////////////////
         ///
@@ -34,17 +34,17 @@ namespace mangh { namespace math
         /**
         * @brief No default constructor!
         */
-        Array3d() = delete;
+        array3d() = delete;
 
         /**
-         * @brief Array3d constructor.
+         * @brief array3d constructor.
          * 
          * @param pages  - the number of pages,
          * @param rows    - the number of rows (in a single page),
          * @param columns - the number of columns (in a single row).
          * 
          */
-        Array3d(std::size_t pages, std::size_t rows, std::size_t columns)
+        array3d(std::size_t pages, std::size_t rows, std::size_t columns)
             : m_page(pages)
         {
             for(std::size_t p = 0; p < pages; ++p)
