@@ -9,6 +9,7 @@
 #include <cstddef>
 #include <cstdlib>
 #include <ios>
+#include <fstream>
 #include <iostream>
 #include <iomanip>
 #include <limits>
@@ -17,11 +18,26 @@
 #include "quantum_state.hpp"
 #include "mesh.hpp"
 #include "math/constants.hpp"
-#include "math/linspace.hpp"
+#include "linspace.hpp"
 #include "numbers.hpp"
 
 // using namespace mangh::math;
 using namespace mangh::hydrogenium;
+
+/**
+ * @brief Opens @p file_name for writing and passes the stream to @p export_func.
+ *
+ * @param file_name   - output file name,
+ * @param export_func - any callable invocable as export_func(std::ostream&).
+ */
+template<typename ExportFunc>
+void export_data(const char* file_name, ExportFunc&& export_func)
+{
+    std::ofstream myfile(file_name/* , std::ios::binary */);
+    export_func(myfile);
+    myfile.close();
+    if (!myfile) std::cerr << "Failed to write '" << file_name << "'\n";
+}
 
 int main()
 {
@@ -49,8 +65,6 @@ int main()
         linspace<number_t>{ 0.0, 2.0 * PI, 40 }     //  azimuthal coordinates (ϕ)
     };
 
-    // mesh.export_psi("psi.txt", params, qs, radii, thetas, phis);
-
     /* Compute psi */
     mesh.compute_wave_function(qs);
 
@@ -67,22 +81,22 @@ int main()
     // number_t max_real = mesh.compute_max_psi_real();
 
     /* Export domain data */
-    mesh.export_grid_data("grid_data.txt"/* , max_pd, max_real */);
+    export_data("grid_data.txt", [&](std::ostream& os) { mesh.export_grid_data(os /* , max_pd, max_real */); });
 
     /* Export probability density data */
-    mesh.export_probability_density("data.txt");
+    export_data("data.txt", [&](std::ostream& os) { mesh.export_probability_density(os); });
 
     /* Export psi real data */
-    mesh.export_psi_real("data_real.txt");
+    export_data("data_real.txt", [&](std::ostream& os) { mesh.export_psi_real(os); });
 
     /* Export psi im data */
-    mesh.export_psi_im("data_im.txt");
+    export_data("data_im.txt", [&](std::ostream& os) { mesh.export_psi_im(os); });
 
     /* Export psi real data at n_phi/2 */
-    mesh.export_data_phi_2("data_real_phi_2.txt");
+    export_data("data_real_phi_2.txt", [&](std::ostream& os) { mesh.export_data_phi_2(os); });
 
     /* Export psi im data at n_phi/2 */
-    mesh.export_data_phi_2_im("data_im_phi_2.txt");
+    export_data("data_im_phi_2.txt", [&](std::ostream& os) { mesh.export_data_phi_2_im(os); });
 
     ///* Verify solution numerically */
     //mesh.verify_solution(params, qs/* , radii, thetas, phis */);
@@ -95,13 +109,13 @@ int main()
     constexpr auto max_precision{std::numeric_limits<number_t>::digits10 + 1};     
 
     /* Print some results */
-    for(std::size_t i = 0; i < mesh.radial.size(); ++i)
+    for(std::size_t r = 0; r < mesh.radial.size(); ++r)
     {
-        std::size_t theta = mesh.phi.size() / 4;
-        std::size_t phi = mesh.theta.size() / 2;
+        std::size_t theta = mesh.azimuthal.size() / 4;
+        std::size_t phi = mesh.polar.size() / 2;
         std::cout
-            << "real psi[" << i << "][" << theta << "][" << phi << "]: " << std::fixed << mesh.psi[i][theta][phi].real()
-            << ", im psi[" << i << "][" << theta << "][" << phi << "]: " << std::fixed << mesh.psi[i][theta][phi].imag()
+            << "real psi[" << r << "][" << theta << "][" << phi << "]: " << std::fixed << mesh.psi[r][theta][phi].real()
+            << ", im psi[" << r << "][" << theta << "][" << phi << "]: " << std::fixed << mesh.psi[r][theta][phi].imag()
             << std::endl
             ;
     }
