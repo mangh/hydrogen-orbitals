@@ -87,13 +87,13 @@ int main()
     export_data("data.txt", [&](std::ostream& os) { mesh.export_probability_density(os); });
 
     /* Export psi real data */
-    export_data("data_real.txt", [&](std::ostream& os) { mesh.export_psi_real(os); });
+    export_data("data_re.txt", [&](std::ostream& os) { mesh.export_psi_real(os); });
 
     /* Export psi im data */
     export_data("data_im.txt", [&](std::ostream& os) { mesh.export_psi_im(os); });
 
     /* Export psi real data at n_phi/2 */
-    export_data("data_real_phi_2.txt", [&](std::ostream& os) { mesh.export_data_phi_2(os); });
+    export_data("data_re_phi_2.txt", [&](std::ostream& os) { mesh.export_data_phi_2(os); });
 
     /* Export psi im data at n_phi/2 */
     export_data("data_im_phi_2.txt", [&](std::ostream& os) { mesh.export_data_phi_2_im(os); });
