@@ -143,7 +143,7 @@ namespace mangh { namespace hydrogenium
          * @param theta - polar angle 0 ≤ θ ≤ π (from the positive Z axis),
          * @param phi - azimuthal angle 0 ≤ ϕ < 2π (from the X-axis, in the XY-plane).
          *
-         * @returns The value of the wave function.
+         * @returns The value of the wave function (probability amplitude).
          *
          */
         complex_t WaveFunction(number_t r, number_t theta, number_t phi) const

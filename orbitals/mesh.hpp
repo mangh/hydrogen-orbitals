@@ -42,13 +42,13 @@ namespace mangh { namespace hydrogenium
         /// @brief Azimuthal coordinate ϕ (phi): 0 ≤ ϕ < 2π (angle from the X-axis in the XY-plane).
         linspace<number_t> azimuthal;
 
-        /// @brief Wave function (Ψ).
+        /// @brief Probability amplitude (the codomain of the wave function Ψ in spherical coordinates).
         array3d<complex_t> psi;
 
         /// @brief Maximum probability density value.
         number_t max_pd;
 
-        /// @brief Maximum value of the real part of the wave function (Ψ).
+        /// @brief Maximum value of the real part of the probability amplitude (Ψ).
         number_t max_real;
 
         /// @brief Total probability (or normalizing factor) for the entire area covered by the coordinates (r, θ, φ).
@@ -83,13 +83,39 @@ namespace mangh { namespace hydrogenium
             , max_real(std::numeric_limits<number_t>::lowest())
             , total_probability(std::numeric_limits<number_t>::lowest())
         {
-            for(auto& phi : this->azimuthal) phi += azimuthal.delta / 2.0;
+            // // What's the point of the below code?
+            // // The azimuthal coordinates are already evenly spaced in the interval [0, 2π) due to the linspace constructor.
+            // // Adjusting them by half of the delta would shift the entire set of azimuthal coordinates by a constant value,
+            // // which is not necessary for the purpose of defining a mesh in spherical coordinates.
+            // // The azimuthal coordinate should start at 0 and end just before 2π to cover the full circle without overlap.
+            // for(size_t phi = 0; phi < this->azimuthal.size(); ++phi)
+            // {
+            //     this->azimuthal[phi] += azimuthal.delta / 2.0;
+            // }
         }
 
         ///////////////////////////////////////////////////////////////////
         ///
         ///     Methods
         ///
+
+        /// @brief Cartesian coordinate (x) from spherical coordinates (r, θ, φ).
+        number_t x(std::size_t r, std::size_t theta, std::size_t phi) const
+        {
+            return radial[r] * sin(polar[theta]) * cos(azimuthal[phi]);
+        }
+        
+        /// @brief Cartesian coordinate (y) from spherical coordinates (r, θ, φ).
+        number_t y(std::size_t r, std::size_t theta, std::size_t phi) const
+        {
+            return radial[r] * sin(polar[theta]) * sin(azimuthal[phi]);
+        }
+
+        /// @brief Cartesian coordinate (z) from spherical coordinates (r, θ, φ).
+        number_t z(std::size_t r, std::size_t theta, [[maybe_unused]] std::size_t phi) const
+        {
+            return radial[r] * cos(polar[theta]);
+        }
 
         void compute_wave_function(const QuantumState& qs)
         {
@@ -102,15 +128,17 @@ namespace mangh { namespace hydrogenium
                 {
                     for (std::size_t phi = 0; phi < azimuthal.size(); ++phi)
                     {
-                        complex_t c = qs.WaveFunction(radial[r], polar[theta], azimuthal[phi]);
-                        if (c.real() > max_real)
-                            max_real = c.real();
+                        // probability amplitude (Ψ) 
+                        complex_t pa = qs.WaveFunction(radial[r], polar[theta], azimuthal[phi]);
+                        if (pa.real() > max_real)
+                            max_real = pa.real();
 
-                        number_t pd = std::norm(c);
+                        // probability density (|Ψ|^2)
+                        number_t pd = std::norm(pa);
                         if (pd > max_pd)
                             max_pd = pd;
 
-                        psi[r][theta][phi] = c;
+                        psi[r][theta][phi] = pa;
                     }
                 }
             }
@@ -191,9 +219,7 @@ namespace mangh { namespace hydrogenium
                 {
                     for (std::size_t phi = 0; phi < 1; ++phi)
                     {
-                        number_t x = radial[r] * sin(polar[theta]) * cos(azimuthal[phi]);
-                        number_t z = radial[r] * cos(polar[theta]);
-                        os << x << " " << z << " " << norm(psi[r][theta][phi]) << std::endl;
+                        os << x(r, theta, phi) << " " << z(r, theta, phi) << " " << norm(psi[r][theta][phi]) << std::endl;
                     }
                 }
             }
@@ -204,9 +230,7 @@ namespace mangh { namespace hydrogenium
                 {
                     for (std::size_t phi = azimuthal.size() / 2; phi < azimuthal.size() / 2 + 1; ++phi)
                     {
-                        number_t x = radial[r] * sin(polar[theta]) * cos(azimuthal[phi]);
-                        number_t z = radial[r] * cos(polar[theta]);
-                        os << x << " " << z << " " << norm(psi[r][theta][phi]) << std::endl;
+                        os << x(r, theta, phi) << " " << z(r, theta, phi) << " " << norm(psi[r][theta][phi]) << std::endl;
                     }
                 }
             }
@@ -223,9 +247,7 @@ namespace mangh { namespace hydrogenium
                 {
                     for (std::size_t phi = phi_slice; phi < phi_slice + 1; ++phi)
                     {
-                        number_t x = radial[r] * sin(polar[theta]) * cos(azimuthal[phi]);
-                        number_t z = radial[r] * cos(polar[theta]);
-                        os << x << " " << z << " " << psi[r][theta][phi].real() << std::endl;
+                        os << x(r, theta, phi) << " " << z(r, theta, phi) << " " << psi[r][theta][phi].real() << std::endl;
                     }
                 }
             }
@@ -236,9 +258,7 @@ namespace mangh { namespace hydrogenium
                 {
                     for (std::size_t phi = azimuthal.size() / 2 + phi_slice; phi < azimuthal.size() / 2 + phi_slice + 1; ++phi)
                     {
-                        double x = radial[r] * sin(polar[theta]) * cos(azimuthal[phi]);
-                        double z = radial[r] * cos(polar[theta]);
-                        os << x << " " << z << " " << psi[r][theta][phi].real() << std::endl;
+                        os << x(r, theta, phi) << " " << z(r, theta, phi) << " " << psi[r][theta][phi].real() << std::endl;
                     }
                 }
             }
@@ -255,9 +275,7 @@ namespace mangh { namespace hydrogenium
                 {
                     for (std::size_t phi = phi_slice; phi < phi_slice + 1; ++phi)
                     {
-                        number_t x = radial[r] * sin(polar[theta]) * cos(azimuthal[phi]);
-                        number_t z = radial[r] * cos(polar[theta]);
-                        os << x << " " << z << " " << psi[r][theta][phi].imag() << std::endl;
+                        os << x(r, theta, phi) << " " << z(r, theta, phi) << " " << psi[r][theta][phi].imag() << std::endl;
                     }
                 }
             }
@@ -268,9 +286,7 @@ namespace mangh { namespace hydrogenium
                 {
                     for (std::size_t phi = azimuthal.size() / 2 + phi_slice; phi < azimuthal.size() / 2 + phi_slice + 1; ++phi)
                     {
-                        number_t x = radial[r] * sin(polar[theta]) * cos(azimuthal[phi]);
-                        number_t z = radial[r] * cos(polar[theta]);
-                        os << x << " " << z << " " << psi[r][theta][phi].imag() << std::endl;
+                        os << x(r, theta, phi) << " " << z(r, theta, phi) << " " << psi[r][theta][phi].imag() << std::endl;
                     }
                 }
             }
@@ -285,9 +301,7 @@ namespace mangh { namespace hydrogenium
                 {
                     for (std::size_t phi = 0; phi < azimuthal.size(); ++phi)
                     {
-                        number_t x = radial[r] * sin(polar[theta]) * cos(azimuthal[phi]);
-                        number_t y = radial[r] * sin(polar[theta]) * sin(azimuthal[phi]);
-                        os << x << " " << y << " " << psi[r][theta][phi].real() << std::endl;
+                        os << x(r, theta, phi) << " " << y(r, theta, phi) << " " << psi[r][theta][phi].real() << std::endl;
                     }
                 }
             }
@@ -302,9 +316,7 @@ namespace mangh { namespace hydrogenium
                 {
                     for (std::size_t phi = 0; phi < azimuthal.size(); ++phi)
                     {
-                        number_t x = radial[r] * sin(polar[theta]) * cos(azimuthal[phi]);
-                        number_t y = radial[r] * sin(polar[theta]) * sin(azimuthal[phi]);
-                        os << x << " " << y << " " << psi[r][theta][phi].imag() << std::endl;
+                        os << x(r, theta, phi) << " " << y(r, theta, phi) << " " << psi[r][theta][phi].imag() << std::endl;
                     }
                 }
             }
