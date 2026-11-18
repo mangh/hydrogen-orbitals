@@ -13,6 +13,12 @@
 #include "array3d.hpp"
 #include "quantum_state.hpp"
 
+#define KahanSummation(total, addend, error)        \
+                number_t addend_ = addend - error;  \
+                number_t total_ = total + addend_;  \
+                error = (total_ - total) - addend_; \
+                total = total_;
+
 namespace mangh { namespace hydrogenium
 {
     using namespace mangh::math;
@@ -149,6 +155,9 @@ namespace mangh { namespace hydrogenium
             static constexpr number_t PI = mangh::math::PI_V<number_t>;
 
             total_probability = 0.0;
+            
+            // Variable to store the error (Kahan summation algorithm)
+            number_t error = 0.0;
 
             /* Top pole */
             for (std::size_t r = 1; r < radial.size(); ++r)
@@ -158,7 +167,7 @@ namespace mangh { namespace hydrogenium
                 number_t probability_per_vol =
                     2.0 / 3.0 * PI * (1 - cos(polar.delta / 2.0)) * (rhi * rhi * rhi - rlo * rlo * rlo) * norm(psi[r][0][0]);
 
-                total_probability += probability_per_vol;
+                KahanSummation(total_probability, probability_per_vol, error)
             }
 
             /* Central nodes */
@@ -170,7 +179,8 @@ namespace mangh { namespace hydrogenium
                     {
                         number_t probability_per_vol = 
                             radial[r] * radial[r] * sin(polar[theta]) * polar.delta * azimuthal.delta * radial.delta * norm(psi[r][theta][phi]);
-                        total_probability += probability_per_vol;
+
+                        KahanSummation(total_probability, probability_per_vol, error)
                     }
                 }
             }
@@ -182,7 +192,8 @@ namespace mangh { namespace hydrogenium
                 number_t rhi = radial[r] + radial.delta / 2.0;
                 number_t probability_per_vol = 
                     2.0 / 3.0 * PI * (1 - cos(polar.delta / 2.0)) * (rhi * rhi * rhi - rlo * rlo * rlo) * norm(psi[r][polar.size() - 1][0]);
-                total_probability += probability_per_vol;
+
+                KahanSummation(total_probability, probability_per_vol, error)
             }
 
             ///* Normalize */
