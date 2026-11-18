@@ -26,7 +26,6 @@ add_executable(
 #   COMPILE DEFINITIONS & OPTIONS
 #
 
-target_compile_features(${target} PRIVATE cxx_std_17)
 # Warning options set differently for MSVC-like compiler (/W3) and all others (-Wall -Wextra):
 target_compile_options(${target} PRIVATE $<IF:$<STREQUAL:${CMAKE_CXX_COMPILER_FRONTEND_VARIANT},MSVC>,/W3,-Wall -Wextra>)
 
@@ -46,6 +45,10 @@ endif()
 #
 #   LINK OPTIONS & LIBRARIES
 #
+
+target_link_libraries(${target} PRIVATE
+  CLI11::CLI11
+)
 
 # IPO/LTO optimization makes the application just as efficient
 # whether it uses units of measure or simple numbers.

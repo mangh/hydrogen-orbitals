@@ -1,18 +1,15 @@
 {
     "clangd.arguments": [
-        "--compile-commands-dir=${workspaceFolder}/build",
         "--clang-tidy",
         "--enable-config"
     ],
     "cmake.configureOnOpen": false,
     "cmake.generator": "Ninja",
     "cmake.configureSettings": {
-        // "BUILD_SHARED_LIBS": "OFF",
-        // "CMAKE_PREFIX_PATH": [
-        //     "c:/Users/marek/lib/inja/Debug"
-        // ],
+        "CMAKE_PREFIX_PATH": [
+            "c:/Users/marek/lib/CLI11"
+        ],
     },
-    // "cmake.loggingLevel": "debug",
     "cmake.configureArgs": [
         "--log-level=DEBUG"
     ],

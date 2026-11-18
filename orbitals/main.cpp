@@ -14,6 +14,8 @@
 #include <iomanip>
 #include <limits>
 
+#include <CLI/CLI.hpp>
+
 #include "parameters.hpp"
 #include "quantum_state.hpp"
 #include "mesh.hpp"
@@ -39,15 +41,40 @@ void export_data(const char* file_name, ExportFunc&& export_func)
     if (!myfile) std::cerr << "Failed to write '" << file_name << "'\n";
 }
 
-int main()
+int main(int argc, char** argv)
 {
+    // get the program arguments
+    CLI::App app{"Hydrogen Orbitals"};
+    argv = app.ensure_utf8(argv);
+
+    app.get_formatter()->column_width(35);
+    app.get_formatter()->enable_option_type_names(false);
+    app.get_formatter()->long_option_alignment_ratio( 0.2f /* 1/5*/);
+
+    int principalQuantumNumber;
+    app.add_option("-n,--principal", principalQuantumNumber, "Principal quantum number (1 <= n <= 10)")
+        ->check(CLI::Range(1, 10))
+        ->required();
+
+    int angularQuantumNumber;
+    app.add_option("-l,--angular", angularQuantumNumber, "Azimuthal number (0 <= l < n)")
+        ->check(CLI::Range(0, 10))
+        ->required();
+
+    int magneticQuantumNumber;
+    app.add_option("-m,--magnetic", magneticQuantumNumber, "Magnetic quantum number (-l <= m <= l)")
+        ->check(CLI::Range(-10, 10))
+        ->required();
+
+    CLI11_PARSE(app, argc, argv);
+
     constexpr number_t PI = PI_V<number_t>;
 
     QuantumState qs
     {
-        4,  // n - principal quantum number
-        2,  // l - azimuthal number
-        1,  // m - magnetic quantum number
+        principalQuantumNumber,  // n - principal quantum number
+        angularQuantumNumber,    // l - azimuthal number
+        magneticQuantumNumber,   // m - magnetic quantum number
     };
 
     Parameters params

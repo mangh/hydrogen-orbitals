@@ -110,5 +110,8 @@ cmake_path(SET ROOT_DIR "${PROJECT_SOURCE_DIR}")
 #   TARGETS to BUILD
 #
 
-# hydrogen orbitals app (by mangh)
+# include CLI11 (command line parser for C++11)
+add_subdirectory ("extern/CLI11")
+
+# hydrogen orbitals app
 add_subdirectory ("orbitals")
