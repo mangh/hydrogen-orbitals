@@ -104,15 +104,22 @@ int main(int argc, char** argv)
     const number_t radialMax = qs.RadialExtent();
     const auto radialPoints = static_cast<std::size_t>(std::lround(radialMax / radialStep)) + 1;
 
-    // θ integral (Clenshaw–Curtis, see Mesh::normalize_psi) is exact for |Yl,m|² only if
-    // the number of polar intervals N = polarPoints - 1 >= 2l; 20 points is the floor for plotting
-    const std::size_t polarPoints = std::max<std::size_t>(20, 2 * qs.l + 1);
+    // Polar grid θ ∈ [0, π]:
+    // - an odd number of points, so that the slice index polarPoints/2 lies exactly at θ = π/2 (XY-plane exports),
+    // - N = polarPoints - 1 >= 2l intervals: the θ integral (Clenshaw–Curtis, see Mesh::normalize_psi) is then exact for |Yl,m|².
+    const std::size_t polarPoints = std::max<std::size_t>(21, 2 * qs.l + 1);
+
+    // Azimuthal grid ϕ ∈ [0, 2π] (the last node duplicates the first):
+    // - an even number of intervals, so that the index azimuthalPoints/2 lies exactly at ϕ = π (opposite half-plane in the XZ-plane exports),
+    // - >= 4|m| intervals: at least 4 samples per period of cos(mϕ) in the XY-plane plots
+    //   (and > 2|m|, which also keeps the ϕ integral exact for real orbitals, where |Ψ|² contains cos²(mϕ)).
+    const std::size_t azimuthalPoints = std::max<std::size_t>(40, static_cast<std::size_t>(4 * std::abs(qs.m))) + 1;
 
     Mesh mesh
     {
         linspace<number_t>{ 0.0, radialMax, radialPoints },  //  radial coordinates (r)
         linspace<number_t>{ 0.0, PI, polarPoints },		    //  polar coordinates (θ)
-        linspace<number_t>{ 0.0, 2.0 * PI, 40 }     //  azimuthal coordinates (ϕ)
+        linspace<number_t>{ 0.0, 2.0 * PI, azimuthalPoints }     //  azimuthal coordinates (ϕ)
     };
 
     /* Compute psi */
