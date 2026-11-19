@@ -104,21 +104,22 @@ namespace mangh { namespace hydrogenium
         }
 
         /**
-         * @brief Radial extent of the orbital: the radius enclosing all but < 1e-4 of the probability
-         * for any l (0 <= l < n, n <= 10).
+         * @brief Radial extent of the orbital: the radius enclosing all but < 5e-6 of the probability
+         * for any l (0 <= l < n, n <= 20).
          *
-         * - R_max = ra0 · n · (2n + 8)
+         * - R_max = ra0 · n · (2n + 12)
          *
-         * @remarks 2n² is the outermost classical turning point (for l = 0); 8n is a margin
+         * @remarks 2n² is the outermost classical turning point (for l = 0); 12n is a margin
          * proportional to the decay length of the probability density (which scales with n).
-         * The 1e-4 bound was verified numerically for n = 1..10.
+         * The 5e-6 bound was verified numerically for n = 1..20 (the tail outside R_max slowly grows with n,
+         * so re-check it before allowing larger n).
          *
          * @returns The radius beyond which the wave function can be neglected.
          *
          */
         number_t RadialExtent() const
         {
-            return nra0 * (2.0 * n + 8.0);
+            return nra0 * (2.0 * n + 12.0);
         }
 
         number_t YlmAssocLegPol(number_t x) const { return ylm_assoc_legendre(l, m, x); }

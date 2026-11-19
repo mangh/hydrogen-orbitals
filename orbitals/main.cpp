@@ -5,6 +5,7 @@
  *      Author: d-w-h
  */
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <cstdlib>
@@ -53,18 +54,18 @@ int main(int argc, char** argv)
     app.get_formatter()->long_option_alignment_ratio( 0.2f /* 1/5*/);
 
     int principalQuantumNumber;
-    app.add_option("-n,--principal", principalQuantumNumber, "Principal quantum number (1 <= n <= 10)")
-        ->check(CLI::Range(1, 10))
+    app.add_option("-n,--principal", principalQuantumNumber, "Principal quantum number (1 <= n <= 20)")
+        ->check(CLI::Range(1, 20))
         ->required();
 
     int angularQuantumNumber;
     app.add_option("-l,--angular", angularQuantumNumber, "Azimuthal number (0 <= l < n)")
-        ->check(CLI::Range(0, 9))
+        ->check(CLI::Range(0, 19))
         ->required();
 
     int magneticQuantumNumber;
     app.add_option("-m,--magnetic", magneticQuantumNumber, "Magnetic quantum number (-l <= m <= l)")
-        ->check(CLI::Range(-9, 9))
+        ->check(CLI::Range(-19, 19))
         ->required();
 
     // cross-option checks: run once after all options are parsed and stored
@@ -103,10 +104,14 @@ int main(int argc, char** argv)
     const number_t radialMax = qs.RadialExtent();
     const auto radialPoints = static_cast<std::size_t>(std::lround(radialMax / radialStep)) + 1;
 
+    // θ integral (Clenshaw–Curtis, see Mesh::normalize_psi) is exact for |Yl,m|² only if
+    // the number of polar intervals N = polarPoints - 1 >= 2l; 20 points is the floor for plotting
+    const std::size_t polarPoints = std::max<std::size_t>(20, 2 * qs.l + 1);
+
     Mesh mesh
     {
         linspace<number_t>{ 0.0, radialMax, radialPoints },  //  radial coordinates (r)
-        linspace<number_t>{ 0.0, PI, 20 },		    //  polar coordinates (θ)
+        linspace<number_t>{ 0.0, PI, polarPoints },		    //  polar coordinates (θ)
         linspace<number_t>{ 0.0, 2.0 * PI, 40 }     //  azimuthal coordinates (ϕ)
     };
 
