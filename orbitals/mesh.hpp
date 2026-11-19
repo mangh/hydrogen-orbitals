@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <limits>
 #include <ostream>
+#include <vector>
 
 #include "math/constants.hpp"
 #include "linspace.hpp"
@@ -150,50 +151,79 @@ namespace mangh { namespace hydrogenium
             }
         }
 
-        void normalize_psi()
+        /**
+         * @brief Clenshaw–Curtis quadrature weights for the polar integral.
+         *
+         * - ∫_0^π f(θ) sinθ dθ  =  ∫_-1^1 f(x) dx  ≈  Σ w_j f(θ_j),   x = cosθ,   θ_j = jπ/N,  j = 0..N.
+         *
+         * @param N - number of polar intervals (= polar.size() - 1); the nodes must be evenly spaced on [0, π], poles included.
+         *
+         * @returns N + 1 weights.
+         *
+         * @remarks The rule interpolates f(x) at the nodes x_j = cos(jπ/N) by a polynomial of degree N
+         * (equivalently, a cosine series in θ) and integrates that polynomial exactly. Hence the result is exact
+         * whenever f is a polynomial in cosθ of degree <= N. |Yl,m(θ,ϕ)|² is such a polynomial of degree 2l,
+         * so the polar integral is exact for every l <= N/2 (l <= 9 for the 20-point polar grid).
+         *
+         * Weights (Trefethen, "Is Gauss quadrature better than Clenshaw–Curtis?", SIAM Review 50 (2008)):
+         *
+         * - w_j = (c_j / N) · (1 − Σ_{k=1}^{⌊N/2⌋} b_k / (4k² − 1) · cos(2kθ_j)),
+         *
+         * - c_0 = c_N = 1, otherwise c_j = 2;  b_k = 1 for k = N/2, otherwise b_k = 2.
+         *
+         */
+        static std::vector<number_t> clenshaw_curtis_weights(std::size_t N)
         {
             static constexpr number_t PI = mangh::math::PI_V<number_t>;
 
+            std::vector<number_t> w(N + 1);
+            for (std::size_t j = 0; j <= N; ++j)
+            {
+                const number_t theta = PI * static_cast<number_t>(j) / static_cast<number_t>(N);
+
+                number_t s = 0.0;
+                for (std::size_t k = 1; k <= N / 2; ++k)
+                {
+                    const number_t b = (2 * k == N) ? 1.0 : 2.0;
+                    s += b / (4.0 * k * k - 1.0) * std::cos(2.0 * k * theta);
+                }
+
+                const number_t c = (j == 0 || j == N) ? 1.0 : 2.0;
+                w[j] = c / static_cast<number_t>(N) * (1.0 - s);
+            }
+            return w;
+        }
+
+        /**
+         * @brief Integrates |Ψ|² over the mesh (the result is stored in total_probability; ≈ 1 for a normalized Ψ).
+         *
+         * - r: trapezoid rule (r = 0 contributes nothing because of r²),
+         * - θ: Clenshaw–Curtis rule (exact for |Yl,m|² with l <= (polar.size() - 1) / 2),
+         * - ϕ: periodic trapezoid rule (the duplicate node ϕ = 2π is skipped).
+         *
+         */
+        void normalize_psi()
+        {
+            const auto w_theta = clenshaw_curtis_weights(polar.size() - 1);
+
             total_probability = 0.0;
-            
+
             // Variable to store the error (Kahan summation algorithm)
             number_t error = 0.0;
 
-            /* Top pole */
             for (std::size_t r = 1; r < radial.size(); ++r)
             {
-                number_t rlo = radial[r] - radial.delta / 2.0;
-                number_t rhi = radial[r] + radial.delta / 2.0;
-                number_t probability_per_vol =
-                    2.0 / 3.0 * PI * (1 - cos(polar.delta / 2.0)) * (rhi * rhi * rhi - rlo * rlo * rlo) * norm(psi[r][0][0]);
+                const number_t w_r = radial[r] * radial[r] * radial.delta * (r + 1 == radial.size() ? 0.5 : 1.0);
 
-                KahanSummation(total_probability, probability_per_vol, error)
-            }
-
-            /* Central nodes */
-            for (std::size_t r = 1; r < radial.size(); ++r)
-            {
-                for (std::size_t theta = 1; theta < polar.size(); ++theta)
+                for (std::size_t theta = 0; theta < polar.size(); ++theta)
                 {
-                    for (std::size_t phi = 0; phi < azimuthal.size() - 1; ++phi)
-                    {
-                        number_t probability_per_vol = 
-                            radial[r] * radial[r] * sin(polar[theta]) * polar.delta * azimuthal.delta * radial.delta * norm(psi[r][theta][phi]);
+                    const number_t w_rt = w_r * w_theta[theta] * azimuthal.delta;
 
-                        KahanSummation(total_probability, probability_per_vol, error)
+                    for (std::size_t phi = 0; phi + 1 < azimuthal.size(); ++phi)
+                    {
+                        KahanSummation(total_probability, w_rt * std::norm(psi[r][theta][phi]), error)
                     }
                 }
-            }
-
-            /* Bottom pole */
-            for (std::size_t r = 1; r < radial.size(); ++r)
-            {
-                number_t rlo = radial[r] - radial.delta / 2.0;
-                number_t rhi = radial[r] + radial.delta / 2.0;
-                number_t probability_per_vol = 
-                    2.0 / 3.0 * PI * (1 - cos(polar.delta / 2.0)) * (rhi * rhi * rhi - rlo * rlo * rlo) * norm(psi[r][polar.size() - 1][0]);
-
-                KahanSummation(total_probability, probability_per_vol, error)
             }
 
             ///* Normalize */
