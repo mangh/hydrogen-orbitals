@@ -13,6 +13,7 @@
 #include <iostream>
 #include <iomanip>
 #include <limits>
+#include <string>
 
 #include <CLI/CLI.hpp>
 
@@ -58,13 +59,25 @@ int main(int argc, char** argv)
 
     int angularQuantumNumber;
     app.add_option("-l,--angular", angularQuantumNumber, "Azimuthal number (0 <= l < n)")
-        ->check(CLI::Range(0, 10))
+        ->check(CLI::Range(0, 9))
         ->required();
 
     int magneticQuantumNumber;
     app.add_option("-m,--magnetic", magneticQuantumNumber, "Magnetic quantum number (-l <= m <= l)")
-        ->check(CLI::Range(-10, 10))
+        ->check(CLI::Range(-9, 9))
         ->required();
+
+    // cross-option checks: run once after all options are parsed and stored
+    app.final_callback([&]() {
+        if (angularQuantumNumber >= principalQuantumNumber)
+            throw CLI::ValidationError("--angular",
+                "l = " + std::to_string(angularQuantumNumber) +
+                " must satisfy 0 <= l < n (n = " + std::to_string(principalQuantumNumber) + ")");
+        if (std::abs(magneticQuantumNumber) > angularQuantumNumber)
+            throw CLI::ValidationError("--magnetic",
+                "m = " + std::to_string(magneticQuantumNumber) +
+                " must satisfy -l <= m <= l (l = " + std::to_string(angularQuantumNumber) + ")");
+    });
 
     CLI11_PARSE(app, argc, argv);
 
@@ -85,9 +98,14 @@ int main(int argc, char** argv)
         1.0    // ke_ - constant in energy level equation (???).
     };
 
+    // radial range scales with n (see QuantumState::RadialExtent), with a fixed step
+    constexpr number_t radialStep = 0.2;
+    const number_t radialMax = qs.RadialExtent();
+    const auto radialPoints = static_cast<std::size_t>(std::lround(radialMax / radialStep)) + 1;
+
     Mesh mesh
     {
-        linspace<number_t>{ 0.0, 40.0, 200 },       //  radial coordinates (r)
+        linspace<number_t>{ 0.0, radialMax, radialPoints },  //  radial coordinates (r)
         linspace<number_t>{ 0.0, PI, 20 },		    //  polar coordinates (θ)
         linspace<number_t>{ 0.0, 2.0 * PI, 40 }     //  azimuthal coordinates (ϕ)
     };

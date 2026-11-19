@@ -103,6 +103,24 @@ namespace mangh { namespace hydrogenium
                 assoc_laguerre(2 * l + 1, n - l - 1, 2 * rho);
         }
 
+        /**
+         * @brief Radial extent of the orbital: the radius enclosing all but < 1e-4 of the probability
+         * for any l (0 <= l < n, n <= 10).
+         *
+         * - R_max = ra0 · n · (2n + 8)
+         *
+         * @remarks 2n² is the outermost classical turning point (for l = 0); 8n is a margin
+         * proportional to the decay length of the probability density (which scales with n).
+         * The 1e-4 bound was verified numerically for n = 1..10.
+         *
+         * @returns The radius beyond which the wave function can be neglected.
+         *
+         */
+        number_t RadialExtent() const
+        {
+            return nra0 * (2.0 * n + 8.0);
+        }
+
         number_t YlmAssocLegPol(number_t x) const { return ylm_assoc_legendre(l, m, x); }
 
         number_t AssocLegPol(number_t x) const { return assoc_legendre(l, m, x); }
