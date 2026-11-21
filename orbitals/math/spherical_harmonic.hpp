@@ -16,9 +16,9 @@ namespace mangh { namespace math
      * @param theta - polar angle 0 ≤ θ ≤ π (from the positive Z axis),
      * @param phi - azimuthal angle 0 ≤ ϕ < 2π (from the X-axis, in the XY-plane).
      *
-     * @returns The value of the spherical harmonic function Yl,m for the arguments (θ,ϕ).
+     * @returns The value of the spherical harmonic function `Yl,m` for the arguments (θ,ϕ).
      * 
-     * @remarks The algorithm uses associated Legendre polynomials P~l,m,
+     * @remarks The algorithm uses associated Legendre polynomials `P~l,m`,
      * @remarks which include both the Condon-Shortley factor and the normalizing
      * @remarks factor for spherical harmonics, i.e. the product:
      * @remarks 
@@ -43,6 +43,17 @@ namespace mangh { namespace math
                         std::conj(phase)));
     }
 
+    /**
+     * @brief Real-valued spherical harmonic basis function `Yl,m(θ,ϕ)`.
+     *
+     * @param l - the degree of the polynomial (0 <= l),
+     * @param m - the order of the polynomial (-l <= m <= l),
+     * @param theta - polar angle 0 ≤ θ ≤ π (from the positive Z axis),
+     * @param phi - azimuthal angle 0 ≤ ϕ < 2π (from the X-axis, in the XY-plane).
+     *
+     * @returns The value of the real-valued spherical harmonic basis function `Yl,m` for the arguments (θ,ϕ).
+     * 
+     */
     template <typename T>
     T spherical_real_basis(unsigned l, int m, T theta, T phi)
     {

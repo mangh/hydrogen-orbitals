@@ -10,15 +10,15 @@
 namespace mangh { namespace math
 {
     /**
-     * @brief Calculates the normalizing factor for spherical harmonics (Yl,m) or,
-     * alternatively, for the associated Legendre polynomials (Pl,m) used in the definition of Yl,m.
+     * @brief Calculates the normalizing factor for spherical harmonics `Yl,m` or,
+     * alternatively, for the associated Legendre polynomials `Pl,m` used in the definition of `Yl,m`.
      *
      * @tparam T - floating point type of the return value.
      * 
      * @param l - the degree of the polynomial (0 <= l),
      * @param m - the order of the polynomial (0 <= m <= l),
      *
-     * @returns Normalizing factor according to the formula: `sqrt[ (2·l+1)/4π · (l-m)!/(l+m)! ]`.
+     * @returns `Yl,m` normalizing factor = `√[ (2·l+1)/4π · (l-m)!/(l+m)! ]`.
      *
      * @exception std::invalid_argument - when the arguments (l,m) do not meet the prerequisites.
      * 
@@ -46,9 +46,8 @@ namespace mangh { namespace math
      }
 
      /**
-     * @brief Associated Legendre polynomial renormalized for use with spherical harmonics
-     * (i.e., a polynomial with the normalization factor of `√[ (2·l+1)/4π · (l-m)!/(l+m)! ]`
-     * and also the Condon-Shortley factor of `(-1)^m)`.
+     * @brief Associated Legendre polynomial `P~l,m` renormalized for use with spherical harmonics (i.e.,
+     * a polynomial with the normalizing factor of `√[ (2·l+1)/4π · (l-m)!/(l+m)! ]` and the Condon-Shortley factor of `(-1)^m)`.
      *                                      
      * @tparam T - floating point type of the argument.
      * 
@@ -56,8 +55,7 @@ namespace mangh { namespace math
      * @param m - the order of the polynomial (0 <= m <= l),
      * @param x - the argument (-1 <= x <= 1).
      * 
-     * @returns The value of the renormalized Legendre polynomial
-     * of degree `l` and order `m` for the argument `x`.
+     * @returns The value of the renormalized Legendre `P~l,m` at `x`.
      * 
      * @exception std::invalid_argument - when arguments do not meet the prerequisites.
      * 
@@ -65,9 +63,9 @@ namespace mangh { namespace math
      * (from the book Numerical Recipes in C++, chapter 6.7 Spherical Harmonics)
      * that implements equation (6.7.8):
      * 
-     * `P~l,m = √[ (2·l+1)/4π · (l-m)!/(l+m)! ] · Pl,m`
+     * `P~l,m = √[ (2·l+1)/4π · (l-m)!/(l+m)! ] · Pl,m` 
      * 
-     * where Pl,m is an ordinary Legendre polynomials defined by equation (6.7.4):
+     * where `Pl,m` is an ordinary Legendre polynomials defined by equation (6.7.4):
      * 
      * `Pl,m(x) = (-1)^m · (1 - x²)^(m/2) · d^m/dx^m Pl(x)`.
      * 
@@ -134,7 +132,7 @@ namespace mangh { namespace math
      }
  
      /**
-      * @brief Associated Legendre polynomial Pl,m(x) (orthonormal).
+      * @brief Associated Legendre polynomial `Pl,m(x)` (orthonormal).
       * 
       * @tparam T - floating point type of argument and return value.
       * 
@@ -144,7 +142,7 @@ namespace mangh { namespace math
       * 
       * @exception std::invalid_argument - when arguments do not meet the prerequisites.
       * 
-      * @returns Value of the associated Legendre polynomial (i.e. Pl,m(x)).
+      * @returns Value of the associated Legendre polynomial `Pl,m` at `x`.
       * 
       * @remarks The function may overflow for m >= 80, or even sooner if l >> m.
       * @remarks See: Numerical Recipes in C++, 6.7. Spherical Harmonics, equation (6.7.4), algorithm "plgndr".

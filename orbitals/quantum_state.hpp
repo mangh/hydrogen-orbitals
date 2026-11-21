@@ -4,7 +4,7 @@
 #include <cmath>
 #include <stdexcept>
 
-#include "math/assoc_legendre.hpp"
+// #include "math/assoc_legendre.hpp"
 #include "math/assoc_laguerre.hpp"
 #include "math/factorial.hpp"
 #include "math/spherical_harmonic.hpp"
@@ -82,15 +82,15 @@ namespace mangh { namespace hydrogenium
         ///
 
         /**
-         * @brief The normalized radial part of the wave function (aka the Rn,l(r) function).
+         * @brief The normalized radial part `Rn,l(r)` of the wave function `Ψ`.
          *
-         * - Rn,l(r) = e^(-ρ/n) · (2ρ/n)^l · L_n-l-1_2l+1(2ρ/n)
+         * - `Rn,l(r) = e^(-ρ/n) · (2ρ/n)^l · L_n-l-1_2l+1(2ρ/n)`,
          *
-         * - ρ = r / nra0 - normalized radial distance from the nucleus.
+         * - `ρ = r / nra0` - normalized radial distance from the nucleus.
          *
          * @param r - radial distance from the nucleus.
          *
-         * @returns The value of the radial function for the argument r i.e. Rn,l(r).
+         * @returns The value of the function `Rn,l` at `(r)`.
          * 
          */
         real_t Radial(real_t r) const
@@ -104,15 +104,15 @@ namespace mangh { namespace hydrogenium
         }
 
         /**
-         * @brief Radial extent of the orbital: the radius enclosing all but < 5e-6 of the probability
-         * for any l (0 <= l < n, n <= 20).
+         * @brief Radial extent of the orbital: the radius enclosing all but < 5e-6 of the probability for any l (0 <= l < n, n <= 20).
          *
-         * - R_max = ra0 · n · (2n + 12)
+         * - `R_max = ra0 · n · (2n + 12)`
          *
-         * @remarks 2n² is the outermost classical turning point (for l = 0); 12n is a margin
-         * proportional to the decay length of the probability density (which scales with n).
-         * The 5e-6 bound was verified numerically for n = 1..20 (the tail outside R_max slowly grows with n,
-         * so re-check it before allowing larger n).
+         * @remarks The 5e-6 bound was verified numerically for n = 1..20
+         * (the tail outside `R_max` slowly grows with n, so re-check it before allowing larger n).
+         *
+         * - `2n²` is the outermost classical turning point (for l = 0),
+         * - `12n` is a margin proportional to the length of the probability density decay (which scales with n).
          *
          * @returns The radius beyond which the wave function can be neglected.
          *
@@ -122,24 +122,24 @@ namespace mangh { namespace hydrogenium
             return nra0 * (2.0 * n + 12.0);
         }
 
-        real_t YlmAssocLegPol(real_t x) const { return ylm_assoc_legendre(l, m, x); }
+        // real_t YlmAssocLegPol(real_t x) const { return ylm_assoc_legendre(l, m, x); }
 
-        real_t AssocLegPol(real_t x) const { return assoc_legendre(l, m, x); }
+        // real_t AssocLegPol(real_t x) const { return assoc_legendre(l, m, x); }
 
         /**
-         * @brief Angular part of the wave function (aka spherical harmonics Yl,m(θ,ϕ)).
+         * @brief Angular part of the wave function (aka spherical harmonics `Yl,m(θ,ϕ)`).
          *
-         * - Yl,m(θ,ϕ) = Pl,m(cosθ) · e^(imϕ).
+         * - `Yl,m(θ,ϕ) = Pl,m(cosθ) · e^(imϕ)`.
          *
          * @param theta - polar angle 0 ≤ θ ≤ π (from the positive Z axis),
          * @param phi - azimuthal angle 0 ≤ ϕ < 2π (from the X-axis, in the XY-plane).
          *
-         * @returns The value of the angular function for the arguments θ, ϕ i.e. Yl,m(θ,ϕ).
+         * @returns The value of the angular function `Yl,m` at `(θ,ϕ)`.
          * 
          * @remarks The calculation uses the relationship (6.7.3):
          * 
-         * - Yl,-m(θ,ϕ) = (-1)^m · conj(Yl,m(θ,ϕ))
-         * 
+         * - `Yl,-m(θ,ϕ) = (-1)^m · conj(Yl,m(θ,ϕ))`
+         *
          * from Numerical Recipes in C++, Chapter 6.7, Spherical Harmonics.
          * 
          */
@@ -148,6 +148,15 @@ namespace mangh { namespace hydrogenium
             return spherical_harmonic(l, m, theta, phi);
         }
 
+        /**
+         * @brief Real part of the angular function (spherical harmonics in real basis).
+         *
+         * @param theta - polar angle 0 ≤ θ ≤ π (from the positive Z axis),
+         * @param phi - azimuthal angle 0 ≤ ϕ < 2π (from the X-axis, in the XY-plane).
+         *
+         * @returns The value of the real angular function `Yl,m` at `(θ,ϕ)`.
+         *
+         */
         real_t AngularRealBasis(real_t theta, real_t phi) const
         {
             return spherical_real_basis(l, m, theta, phi);
@@ -156,7 +165,7 @@ namespace mangh { namespace hydrogenium
         /**
          * @brief Normalized wave function.
          *
-         * - Ψn,l,m(r,θ,ϕ) = Rn,l(r) * Yl,m(θ,ϕ).
+         * - `Ψn,l,m(r,θ,ϕ) = Rn,l(r) * Yl,m(θ,ϕ)`.
          *
          * @param r - radial distance from the nucleus,
          * @param theta - polar angle 0 ≤ θ ≤ π (from the positive Z axis),

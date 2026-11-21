@@ -7,7 +7,7 @@
 namespace mangh { namespace math
 {
     /**
-     * @brief Associated (generalized) Laguerre polynomial.
+     * @brief Associated (generalized) Laguerre polynomial `Lα,n(x)`.
      * 
      * @tparam T - floating point type of the argument.
      * 
@@ -15,7 +15,7 @@ namespace mangh { namespace math
      * @param n - the degree of the polynomial (n >= 0),
      * @param x - the argument of the polynomial.
      * 
-     * @returns The value of the polynomial Lα,n for the argument x.
+     * @returns The value of the polynomial `Lα,n(x)` at `x`.
      *
      * @remarks See: Numerical Recipes in C++, 4.6.1, algorithm "gauleg",
      * and the recursive definition at https://en.wikipedia.org/wiki/Laguerre_polynomials:
