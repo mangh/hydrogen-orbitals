@@ -99,14 +99,14 @@ int main(int argc, char** argv)
         1.0    // ke_ - constant in energy level equation (???).
     };
 
-    // radial range scales with n (see QuantumState::RadialExtent), with a fixed step
+    // Radial range scales with n (see QuantumState::RadialExtent), with a fixed step
     constexpr real_t radialStep = 0.2;
     const real_t radialMax = qs.RadialExtent();
     const auto radialPoints = static_cast<std::size_t>(std::lround(radialMax / radialStep)) + 1;
 
     // Polar grid θ ∈ [0, π]:
     // - an odd number of points, so that the slice index polarPoints/2 lies exactly at θ = π/2 (XY-plane exports),
-    // - N = polarPoints - 1 >= 2l intervals: the θ integral (Clenshaw–Curtis, see Mesh::normalize_psi) is then exact for |Yl,m|².
+    // - N = polarPoints - 1 >= 2l intervals: the θ integral (Clenshaw–Curtis, see Mesh::compute_total_probability) is then exact for |Yl,m|².
     const std::size_t polarPoints = std::max<std::size_t>(21, 2 * qs.l + 1);
 
     // Azimuthal grid ϕ ∈ [0, 2π] (the last node duplicates the first):
@@ -122,20 +122,9 @@ int main(int argc, char** argv)
         linspace<real_t>{ 0.0, 2.0 * PI, azimuthalPoints }     //  azimuthal coordinates (ϕ)
     };
 
-    /* Compute psi */
+    // Compute wave function Ψ (psi) and normalizing factor
     mesh.compute_wave_function(qs);
 
-    /* Normalize psi */
-    mesh.normalize_psi();
-
-    // /* Compute probability density */
-    // mesh.compute_probability_density();
-
-    // /* Compute max probability density */
-    // real_t max_pd = mesh.compute_max_pd();
-
-    // /* Compute max psi_real */
-    // real_t max_real = mesh.compute_max_psi_real();
 
     /* Export domain data */
     export_data("grid_data.txt", [&](std::ostream& os) { mesh.export_grid_data(os /* , max_pd, max_real */); });
@@ -154,9 +143,6 @@ int main(int argc, char** argv)
 
     /* Export psi im data at n_phi/2 */
     export_data("data_im_phi_2.txt", [&](std::ostream& os) { mesh.export_data_phi_2_im(os); });
-
-    ///* Verify solution numerically */
-    //mesh.verify_solution(params, qs/* , radii, thetas, phis */);
 
     // char* prev_loc = std::setlocale(LC_ALL, nullptr);
     // std::setlocale(LC_ALL, "pl_PL.UTF-8");
@@ -213,7 +199,7 @@ int main(int argc, char** argv)
         << std::setprecision(max_precision)
         << std::fixed
         //<< "error in percentage : " << mesh.error << std::endl
-        << "normalization constant : " << std::sqrt(mesh.total_probability) << std::endl;
+        << "normalizing constant : " << std::sqrt(mesh.normalizing_factor) << std::endl;
 
     // if (const char* loc = std::setlocale(LC_ALL, prev_loc/*.c_str()*/))
     //     std::printf("Restorred LC_ALL locale: %s\n", loc);

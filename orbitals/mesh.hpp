@@ -15,8 +15,8 @@
 #include "quantum_state.hpp"
 
 #define KahanSummation(total, addend, error)        \
-                real_t addend_ = addend - error;  \
-                real_t total_ = total + addend_;  \
+                real_t addend_ = addend - error;    \
+                real_t total_ = total + addend_;    \
                 error = (total_ - total) - addend_; \
                 total = total_;
 
@@ -52,14 +52,14 @@ namespace mangh { namespace hydrogenium
         /// @brief Probability amplitude (the codomain of the wave function Ψ in spherical coordinates).
         array3d<complex_t> psi;
 
-        /// @brief Maximum probability density value.
+        /// @brief Maximum probability density value(|Ψ|^2).
         real_t max_pd;
 
         /// @brief Maximum value of the real part of the probability amplitude (Ψ).
         real_t max_real;
 
         /// @brief Total probability (or normalizing factor) for the entire area covered by the coordinates (r, θ, φ).
-        real_t total_probability;
+        real_t normalizing_factor;
 
         ///////////////////////////////////////////////////////////////////
         ///
@@ -88,17 +88,8 @@ namespace mangh { namespace hydrogenium
 
             , max_pd(std::numeric_limits<real_t>::lowest())
             , max_real(std::numeric_limits<real_t>::lowest())
-            , total_probability(std::numeric_limits<real_t>::lowest())
+            , normalizing_factor()
         {
-            // // What's the point of the below code?
-            // // The azimuthal coordinates are already evenly spaced in the interval [0, 2π) due to the linspace constructor.
-            // // Adjusting them by half of the delta would shift the entire set of azimuthal coordinates by a constant value,
-            // // which is not necessary for the purpose of defining a mesh in spherical coordinates.
-            // // The azimuthal coordinate should start at 0 and end just before 2π to cover the full circle without overlap.
-            // for(size_t phi = 0; phi < this->azimuthal.size(); ++phi)
-            // {
-            //     this->azimuthal[phi] += azimuthal.delta / 2.0;
-            // }
         }
 
         ///////////////////////////////////////////////////////////////////
@@ -149,6 +140,11 @@ namespace mangh { namespace hydrogenium
                     }
                 }
             }
+
+            // The following calculation isn't necessary
+            // when we use a normalized function Ψ (for which the total probability ≈ 1).
+            // We do it just to check if that's really the case:
+            normalizing_factor = compute_total_probability();
         }
 
         /**
@@ -195,18 +191,21 @@ namespace mangh { namespace hydrogenium
         }
 
         /**
-         * @brief Integrates |Ψ|² over the mesh (the result is stored in total_probability; ≈ 1 for a normalized Ψ).
+         * @brief Integrates |Ψ|² over the mesh.
          *
          * - r: trapezoid rule (r = 0 contributes nothing because of r²),
          * - θ: Clenshaw–Curtis rule (exact for |Yl,m|² with l <= (polar.size() - 1) / 2),
          * - ϕ: periodic trapezoid rule (the duplicate node ϕ = 2π is skipped).
          *
+         * @remarks The result should be very close to 1 for a normalized Ψ.
+         *
+         * @returns The total probability for the whole mesh.
          */
-        void normalize_psi()
+        real_t compute_total_probability()
         {
             const auto w_theta = clenshaw_curtis_weights(polar.size() - 1);
 
-            total_probability = 0.0;
+            real_t total_probability{};
 
             // Variable to store the error (Kahan summation algorithm)
             real_t error = 0.0;
@@ -226,18 +225,7 @@ namespace mangh { namespace hydrogenium
                 }
             }
 
-            ///* Normalize */
-            //auto integral_sqrt = sqrt(total_probability);
-            //for (std::size_t r = 1; r < radial.size(); ++r)
-            //{
-            //    for (std::size_t theta = 0; theta < polar.size(); ++theta)
-            //    {
-            //        for (std::size_t phi = 0; phi < azimuthal.size(); ++phi)
-            //        {
-            //            psi[r][theta][phi] /= integral_sqrt;
-            //        }
-            //    }
-            //}
+            return total_probability;
         }
 
         void export_grid_data(std::ostream &os) const
@@ -362,76 +350,6 @@ namespace mangh { namespace hydrogenium
                 }
             }
         }
-
-    //    void verify_solution(const Parameters& params, const QuantumState& qs)
-    //    {
-    //        static constexpr complex_t CZERO{ 0.0, 0.0 };
-
-    //        array3d<complex_t> ratio(radial.size(), azimuthal.size(), polar.size());
-
-    //        real_t alpha = params.h / (2.0 * params.mp);
-    //        real_t E = params.ke / (qs.n * qs.n);
-
-    //        for (std::size_t r = 1; r < radial.size() - 1; ++r)
-    //        {
-    //            for (std::size_t theta = 1; theta < polar.size() - 1; ++theta)
-    //            {
-    //                for (std::size_t phi = 1; phi < azimuthal.size() - 1; ++phi)
-    //                {
-    //                    if (psi[r][theta][phi] == CZERO)
-    //                        continue;
-
-    //                    real_t dV1 = radial[r] * radial[r] * radial.delta;
-    //                    real_t dV2 = radial[r] * radial[r] * sin(polar[theta]) * sin(polar[theta]) * azimuthal.delta;
-    //                    real_t dV3 = radial[r] * radial[r] * sin(polar[theta]) * polar.delta;
-
-    //                    // real_t aS = r[i - 1] * r[i - 1] * alpha / (dV1 * r_p.delta);
-    //                    // real_t aN = r[i] * r[i] * alpha / (dV1 * r_p.delta);
-    //                    real_t r1 = radial[r] - radial.delta / 2.0;
-    //                    real_t r2 = radial[r] + radial.delta / 2.0;
-
-    //                    real_t aS = r1 * r1 * alpha / (dV1 * radial.delta);
-    //                    real_t aN = r2 * r2 * alpha / (dV1 * radial.delta);
-    //                    real_t aW = alpha / (dV2 * azimuthal.delta);
-    //                    real_t aE = alpha / (dV2 * azimuthal.delta);
-    //                    real_t aB = sin(polar[theta] - polar.delta / 2.0) * alpha / (dV3 * polar.delta);
-    //                    real_t aT = sin(polar[theta] + polar.delta / 2.0) * alpha / (dV3 * polar.delta);
-
-    //                    complex_t psi_s{ -aS * psi[r - 1][phi][theta] };
-    //                    complex_t psi_n{ -aN * psi[r + 1][phi][theta] };
-    //                    complex_t psi_w{ -aW * psi[r][phi - 1][theta] };
-    //                    complex_t psi_e{ -aE * psi[r][phi + 1][theta] };
-    //                    complex_t psi_b{ -aB * psi[r][phi][theta - 1] };
-    //                    complex_t psi_t{ -aT * psi[r][phi][theta + 1] };
-
-    //                    complex_t psi_p_k_rp{ -params.kp / radial[r] * psi[r][phi][theta] };
-
-    //                    complex_t Fp{ psi_s + psi_n + psi_w + psi_e + psi_b + psi_t + psi_p_k_rp };
-    //                    real_t ap = aS + aN + aW + aE + aB + aT - E;
-    //                    complex_t ap_psi_p{ -ap * psi[r][theta][phi] };
-
-    //                    ratio[r][theta][phi] = Fp / ap_psi_p;
-    //                }
-    //            }
-    //        }
-
-    //        /* Compute error */
-    //        real_t error = 0.0;
-    //        for (std::size_t ir = 1; ir < radial.size() - 1; ++ir)
-    //        {
-    //            for (std::size_t it = 1; it < polar.size() - 1; ++it)
-    //            {
-    //                for (std::size_t ip = 1; ip < azimuthal.size() - 1; ++ip)
-    //                {
-    //                    if (fabs(ratio[ir][it][ip].real()) > 0.2)
-    //                    {
-    //                        error += fabs(1.0 - ratio[ir][it][ip].real());
-    //                    }
-    //                }
-    //            }
-    //        }
-    //        error = 100.0 * error / ((radial.size() - 2) * (azimuthal.size() - 2) * (polar.size() - 2));
-    //    }
     };
 }}
 
