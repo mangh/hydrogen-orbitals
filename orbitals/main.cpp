@@ -82,7 +82,7 @@ int main(int argc, char** argv)
 
     CLI11_PARSE(app, argc, argv);
 
-    constexpr number_t PI = PI_V<number_t>;
+    constexpr real_t PI = PI_V<real_t>;
 
     QuantumState qs
     {
@@ -100,8 +100,8 @@ int main(int argc, char** argv)
     };
 
     // radial range scales with n (see QuantumState::RadialExtent), with a fixed step
-    constexpr number_t radialStep = 0.2;
-    const number_t radialMax = qs.RadialExtent();
+    constexpr real_t radialStep = 0.2;
+    const real_t radialMax = qs.RadialExtent();
     const auto radialPoints = static_cast<std::size_t>(std::lround(radialMax / radialStep)) + 1;
 
     // Polar grid θ ∈ [0, π]:
@@ -117,9 +117,9 @@ int main(int argc, char** argv)
 
     Mesh mesh
     {
-        linspace<number_t>{ 0.0, radialMax, radialPoints },  //  radial coordinates (r)
-        linspace<number_t>{ 0.0, PI, polarPoints },		    //  polar coordinates (θ)
-        linspace<number_t>{ 0.0, 2.0 * PI, azimuthalPoints }     //  azimuthal coordinates (ϕ)
+        linspace<real_t>{ 0.0, radialMax, radialPoints },  //  radial coordinates (r)
+        linspace<real_t>{ 0.0, PI, polarPoints },		    //  polar coordinates (θ)
+        linspace<real_t>{ 0.0, 2.0 * PI, azimuthalPoints }     //  azimuthal coordinates (ϕ)
     };
 
     /* Compute psi */
@@ -132,10 +132,10 @@ int main(int argc, char** argv)
     // mesh.compute_probability_density();
 
     // /* Compute max probability density */
-    // number_t max_pd = mesh.compute_max_pd();
+    // real_t max_pd = mesh.compute_max_pd();
 
     // /* Compute max psi_real */
-    // number_t max_real = mesh.compute_max_psi_real();
+    // real_t max_real = mesh.compute_max_psi_real();
 
     /* Export domain data */
     export_data("grid_data.txt", [&](std::ostream& os) { mesh.export_grid_data(os /* , max_pd, max_real */); });
@@ -163,7 +163,7 @@ int main(int argc, char** argv)
     // if (const char* loc = std::setlocale(LC_ALL, "pl_PL.UTF-8"))
     //     std::printf("New LC_ALL locale: %s\n", loc);
 
-    constexpr auto max_precision{std::numeric_limits<number_t>::digits10 + 1};     
+    constexpr auto max_precision{std::numeric_limits<real_t>::digits10 + 1};     
 
     /* Print some results */
     for(std::size_t r = 0; r < mesh.radial.size(); ++r)
@@ -177,7 +177,7 @@ int main(int argc, char** argv)
             ;
     }
 
-    // // constexpr auto max_precision{std::numeric_limits<number_t>::digits10 + 1};     
+    // // constexpr auto max_precision{std::numeric_limits<real_t>::digits10 + 1};     
     // std::cout
     //     << "R = " << radii.back() << "\t"
     //     << "nr = " << dd.n_r << " (" << radii.size() << ")\t"

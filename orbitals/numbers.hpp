@@ -14,8 +14,8 @@ namespace mangh { namespace hydrogenium
     ///     Types
     ///
 
-    using number_t = double;
-    using complex_t = std::complex<number_t>;
+    using real_t = double;
+    using complex_t = std::complex<real_t>;
 
 }}
 

@@ -17,10 +17,10 @@ namespace mangh { namespace hydrogenium
         ///
 
         /// @brief Planck constant.
-        const number_t h;
+        const real_t h;
 
         /// @brief Mass of particle.
-        const number_t mp;
+        const real_t mp;
 
         /// @brief Potential energy constant.
         ///
@@ -38,7 +38,7 @@ namespace mangh { namespace hydrogenium
         /// 
         ///   - r is the distance of the electron from the nucleus.
         /// 
-        const number_t kp;
+        const real_t kp;
 
         /// @brief Energy constant (negative value of Rydberg's energy unit).
         ///
@@ -52,7 +52,7 @@ namespace mangh { namespace hydrogenium
         ///
         ///   - Rh is the Rydberg's energy unit (Rh = 2.18·10^-18 J).
         ///
-        const number_t ke;
+        const real_t ke;
 
         ///////////////////////////////////////////////////////////////////
         ///
@@ -74,7 +74,7 @@ namespace mangh { namespace hydrogenium
          * @param ke - Constant in energy level equation (???).
          *
          */
-        Parameters(number_t h, number_t mp, number_t kp, number_t ke)
+        Parameters(real_t h, real_t mp, real_t kp, real_t ke)
             : h(h)
             , mp(mp)
             , kp(kp)

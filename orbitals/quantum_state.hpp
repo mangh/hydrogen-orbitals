@@ -70,7 +70,7 @@ namespace mangh { namespace hydrogenium
             , nra0(ra0 * n)
             , radial_factor(
                 std::sqrt(
-                    std::pow(2.0 / nra0, 3) * factorial<number_t>(n - l - 1) / 2.0 / n / factorial<number_t>(n + l)
+                    std::pow(2.0 / nra0, 3) * factorial<real_t>(n - l - 1) / 2.0 / n / factorial<real_t>(n + l)
                 )
             )
         {
@@ -93,7 +93,7 @@ namespace mangh { namespace hydrogenium
          * @returns The value of the radial function for the argument r i.e. Rn,l(r).
          * 
          */
-        number_t Radial(number_t r) const
+        real_t Radial(real_t r) const
         {
             auto rho = r / nra0;
             return
@@ -117,14 +117,14 @@ namespace mangh { namespace hydrogenium
          * @returns The radius beyond which the wave function can be neglected.
          *
          */
-        number_t RadialExtent() const
+        real_t RadialExtent() const
         {
             return nra0 * (2.0 * n + 12.0);
         }
 
-        number_t YlmAssocLegPol(number_t x) const { return ylm_assoc_legendre(l, m, x); }
+        real_t YlmAssocLegPol(real_t x) const { return ylm_assoc_legendre(l, m, x); }
 
-        number_t AssocLegPol(number_t x) const { return assoc_legendre(l, m, x); }
+        real_t AssocLegPol(real_t x) const { return assoc_legendre(l, m, x); }
 
         /**
          * @brief Angular part of the wave function (aka spherical harmonics Yl,m(θ,ϕ)).
@@ -143,12 +143,12 @@ namespace mangh { namespace hydrogenium
          * from Numerical Recipes in C++, Chapter 6.7, Spherical Harmonics.
          * 
          */
-        complex_t Angular(number_t theta, number_t phi) const
+        complex_t Angular(real_t theta, real_t phi) const
         {
             return spherical_harmonic(l, m, theta, phi);
         }
 
-        number_t AngularRealBasis(number_t theta, number_t phi) const
+        real_t AngularRealBasis(real_t theta, real_t phi) const
         {
             return spherical_real_basis(l, m, theta, phi);
         }
@@ -165,7 +165,7 @@ namespace mangh { namespace hydrogenium
          * @returns The value of the wave function (probability amplitude).
          *
          */
-        complex_t WaveFunction(number_t r, number_t theta, number_t phi) const
+        complex_t WaveFunction(real_t r, real_t theta, real_t phi) const
         {
             return Radial(r) * Angular(theta, phi);
         }
@@ -191,14 +191,14 @@ namespace mangh { namespace hydrogenium
 
         /// @brief Reduced Bohr radius
         /// for the reduced mass of the electron-proton system.
-        const number_t ra0;
+        const real_t ra0;
 
         /// @brief n * reduced Bohr radius (= n * ra0).
-        const number_t nra0;
+        const real_t nra0;
 
         /// @brief Normalizing factor
         /// for the radial part Rn,l of the wave function.
-        const number_t radial_factor;
+        const real_t radial_factor;
 
         static constexpr const char * badQuantumNumbers =
             "Quantum numbers (n, l, m) do not meet the conditions: n > 0,  0 <= l < n, -l <= m <= l.";

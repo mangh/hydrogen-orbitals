@@ -15,8 +15,8 @@
 #include "quantum_state.hpp"
 
 #define KahanSummation(total, addend, error)        \
-                number_t addend_ = addend - error;  \
-                number_t total_ = total + addend_;  \
+                real_t addend_ = addend - error;  \
+                real_t total_ = total + addend_;  \
                 error = (total_ - total) - addend_; \
                 total = total_;
 
@@ -41,25 +41,25 @@ namespace mangh { namespace hydrogenium
         ///
 
         /// @brief Radial coordinate.
-        linspace<number_t> radial;
+        linspace<real_t> radial;
 
         /// @brief Polar coordinate θ (theta): 0 ≤ θ ≤ π (angle from the positive Z axis).
-        linspace<number_t> polar;
+        linspace<real_t> polar;
 
         /// @brief Azimuthal coordinate ϕ (phi): 0 ≤ ϕ < 2π (angle from the X-axis in the XY-plane).
-        linspace<number_t> azimuthal;
+        linspace<real_t> azimuthal;
 
         /// @brief Probability amplitude (the codomain of the wave function Ψ in spherical coordinates).
         array3d<complex_t> psi;
 
         /// @brief Maximum probability density value.
-        number_t max_pd;
+        real_t max_pd;
 
         /// @brief Maximum value of the real part of the probability amplitude (Ψ).
-        number_t max_real;
+        real_t max_real;
 
         /// @brief Total probability (or normalizing factor) for the entire area covered by the coordinates (r, θ, φ).
-        number_t total_probability;
+        real_t total_probability;
 
         ///////////////////////////////////////////////////////////////////
         ///
@@ -76,9 +76,9 @@ namespace mangh { namespace hydrogenium
          *
          *
          */
-        Mesh(const linspace<number_t>& radial,
-             const linspace<number_t>& polar,
-             const linspace<number_t>& azimuthal
+        Mesh(const linspace<real_t>& radial,
+             const linspace<real_t>& polar,
+             const linspace<real_t>& azimuthal
             )
             : radial(radial)
             , polar(polar)
@@ -86,9 +86,9 @@ namespace mangh { namespace hydrogenium
 
             , psi(radial.size(), polar.size(), azimuthal.size())
 
-            , max_pd(std::numeric_limits<number_t>::lowest())
-            , max_real(std::numeric_limits<number_t>::lowest())
-            , total_probability(std::numeric_limits<number_t>::lowest())
+            , max_pd(std::numeric_limits<real_t>::lowest())
+            , max_real(std::numeric_limits<real_t>::lowest())
+            , total_probability(std::numeric_limits<real_t>::lowest())
         {
             // // What's the point of the below code?
             // // The azimuthal coordinates are already evenly spaced in the interval [0, 2π) due to the linspace constructor.
@@ -107,27 +107,27 @@ namespace mangh { namespace hydrogenium
         ///
 
         /// @brief Cartesian coordinate (x) from spherical coordinates (r, θ, φ).
-        number_t x(std::size_t r, std::size_t theta, std::size_t phi) const
+        real_t x(std::size_t r, std::size_t theta, std::size_t phi) const
         {
             return radial[r] * sin(polar[theta]) * cos(azimuthal[phi]);
         }
         
         /// @brief Cartesian coordinate (y) from spherical coordinates (r, θ, φ).
-        number_t y(std::size_t r, std::size_t theta, std::size_t phi) const
+        real_t y(std::size_t r, std::size_t theta, std::size_t phi) const
         {
             return radial[r] * sin(polar[theta]) * sin(azimuthal[phi]);
         }
 
         /// @brief Cartesian coordinate (z) from spherical coordinates (r, θ, φ).
-        number_t z(std::size_t r, std::size_t theta, [[maybe_unused]] std::size_t phi) const
+        real_t z(std::size_t r, std::size_t theta, [[maybe_unused]] std::size_t phi) const
         {
             return radial[r] * cos(polar[theta]);
         }
 
         void compute_wave_function(const QuantumState& qs)
         {
-            max_pd = std::numeric_limits<number_t>::lowest();
-            max_real = std::numeric_limits<number_t>::lowest();
+            max_pd = std::numeric_limits<real_t>::lowest();
+            max_real = std::numeric_limits<real_t>::lowest();
 
             for (std::size_t r = 0; r < radial.size(); ++r)
             {
@@ -141,7 +141,7 @@ namespace mangh { namespace hydrogenium
                             max_real = pa.real();
 
                         // probability density (|Ψ|^2)
-                        number_t pd = std::norm(pa);
+                        real_t pd = std::norm(pa);
                         if (pd > max_pd)
                             max_pd = pd;
 
@@ -172,24 +172,24 @@ namespace mangh { namespace hydrogenium
          * - c_0 = c_N = 1, otherwise c_j = 2;  b_k = 1 for k = N/2, otherwise b_k = 2.
          *
          */
-        static std::vector<number_t> clenshaw_curtis_weights(std::size_t N)
+        static std::vector<real_t> clenshaw_curtis_weights(std::size_t N)
         {
-            static constexpr number_t PI = mangh::math::PI_V<number_t>;
+            static constexpr real_t PI = mangh::math::PI_V<real_t>;
 
-            std::vector<number_t> w(N + 1);
+            std::vector<real_t> w(N + 1);
             for (std::size_t j = 0; j <= N; ++j)
             {
-                const number_t theta = PI * static_cast<number_t>(j) / static_cast<number_t>(N);
+                const real_t theta = PI * static_cast<real_t>(j) / static_cast<real_t>(N);
 
-                number_t s = 0.0;
+                real_t s = 0.0;
                 for (std::size_t k = 1; k <= N / 2; ++k)
                 {
-                    const number_t b = (2 * k == N) ? 1.0 : 2.0;
+                    const real_t b = (2 * k == N) ? 1.0 : 2.0;
                     s += b / (4.0 * k * k - 1.0) * std::cos(2.0 * k * theta);
                 }
 
-                const number_t c = (j == 0 || j == N) ? 1.0 : 2.0;
-                w[j] = c / static_cast<number_t>(N) * (1.0 - s);
+                const real_t c = (j == 0 || j == N) ? 1.0 : 2.0;
+                w[j] = c / static_cast<real_t>(N) * (1.0 - s);
             }
             return w;
         }
@@ -209,15 +209,15 @@ namespace mangh { namespace hydrogenium
             total_probability = 0.0;
 
             // Variable to store the error (Kahan summation algorithm)
-            number_t error = 0.0;
+            real_t error = 0.0;
 
             for (std::size_t r = 1; r < radial.size(); ++r)
             {
-                const number_t w_r = radial[r] * radial[r] * radial.delta * (r + 1 == radial.size() ? 0.5 : 1.0);
+                const real_t w_r = radial[r] * radial[r] * radial.delta * (r + 1 == radial.size() ? 0.5 : 1.0);
 
                 for (std::size_t theta = 0; theta < polar.size(); ++theta)
                 {
-                    const number_t w_rt = w_r * w_theta[theta] * azimuthal.delta;
+                    const real_t w_rt = w_r * w_theta[theta] * azimuthal.delta;
 
                     for (std::size_t phi = 0; phi + 1 < azimuthal.size(); ++phi)
                     {
@@ -369,8 +369,8 @@ namespace mangh { namespace hydrogenium
 
     //        array3d<complex_t> ratio(radial.size(), azimuthal.size(), polar.size());
 
-    //        number_t alpha = params.h / (2.0 * params.mp);
-    //        number_t E = params.ke / (qs.n * qs.n);
+    //        real_t alpha = params.h / (2.0 * params.mp);
+    //        real_t E = params.ke / (qs.n * qs.n);
 
     //        for (std::size_t r = 1; r < radial.size() - 1; ++r)
     //        {
@@ -381,21 +381,21 @@ namespace mangh { namespace hydrogenium
     //                    if (psi[r][theta][phi] == CZERO)
     //                        continue;
 
-    //                    number_t dV1 = radial[r] * radial[r] * radial.delta;
-    //                    number_t dV2 = radial[r] * radial[r] * sin(polar[theta]) * sin(polar[theta]) * azimuthal.delta;
-    //                    number_t dV3 = radial[r] * radial[r] * sin(polar[theta]) * polar.delta;
+    //                    real_t dV1 = radial[r] * radial[r] * radial.delta;
+    //                    real_t dV2 = radial[r] * radial[r] * sin(polar[theta]) * sin(polar[theta]) * azimuthal.delta;
+    //                    real_t dV3 = radial[r] * radial[r] * sin(polar[theta]) * polar.delta;
 
-    //                    // number_t aS = r[i - 1] * r[i - 1] * alpha / (dV1 * r_p.delta);
-    //                    // number_t aN = r[i] * r[i] * alpha / (dV1 * r_p.delta);
-    //                    number_t r1 = radial[r] - radial.delta / 2.0;
-    //                    number_t r2 = radial[r] + radial.delta / 2.0;
+    //                    // real_t aS = r[i - 1] * r[i - 1] * alpha / (dV1 * r_p.delta);
+    //                    // real_t aN = r[i] * r[i] * alpha / (dV1 * r_p.delta);
+    //                    real_t r1 = radial[r] - radial.delta / 2.0;
+    //                    real_t r2 = radial[r] + radial.delta / 2.0;
 
-    //                    number_t aS = r1 * r1 * alpha / (dV1 * radial.delta);
-    //                    number_t aN = r2 * r2 * alpha / (dV1 * radial.delta);
-    //                    number_t aW = alpha / (dV2 * azimuthal.delta);
-    //                    number_t aE = alpha / (dV2 * azimuthal.delta);
-    //                    number_t aB = sin(polar[theta] - polar.delta / 2.0) * alpha / (dV3 * polar.delta);
-    //                    number_t aT = sin(polar[theta] + polar.delta / 2.0) * alpha / (dV3 * polar.delta);
+    //                    real_t aS = r1 * r1 * alpha / (dV1 * radial.delta);
+    //                    real_t aN = r2 * r2 * alpha / (dV1 * radial.delta);
+    //                    real_t aW = alpha / (dV2 * azimuthal.delta);
+    //                    real_t aE = alpha / (dV2 * azimuthal.delta);
+    //                    real_t aB = sin(polar[theta] - polar.delta / 2.0) * alpha / (dV3 * polar.delta);
+    //                    real_t aT = sin(polar[theta] + polar.delta / 2.0) * alpha / (dV3 * polar.delta);
 
     //                    complex_t psi_s{ -aS * psi[r - 1][phi][theta] };
     //                    complex_t psi_n{ -aN * psi[r + 1][phi][theta] };
@@ -407,7 +407,7 @@ namespace mangh { namespace hydrogenium
     //                    complex_t psi_p_k_rp{ -params.kp / radial[r] * psi[r][phi][theta] };
 
     //                    complex_t Fp{ psi_s + psi_n + psi_w + psi_e + psi_b + psi_t + psi_p_k_rp };
-    //                    number_t ap = aS + aN + aW + aE + aB + aT - E;
+    //                    real_t ap = aS + aN + aW + aE + aB + aT - E;
     //                    complex_t ap_psi_p{ -ap * psi[r][theta][phi] };
 
     //                    ratio[r][theta][phi] = Fp / ap_psi_p;
@@ -416,7 +416,7 @@ namespace mangh { namespace hydrogenium
     //        }
 
     //        /* Compute error */
-    //        number_t error = 0.0;
+    //        real_t error = 0.0;
     //        for (std::size_t ir = 1; ir < radial.size() - 1; ++ir)
     //        {
     //            for (std::size_t it = 1; it < polar.size() - 1; ++it)
