@@ -52,6 +52,8 @@ namespace mangh { namespace hydrogenium
         /// @brief Probability amplitude (the codomain of the wave function Ψ in spherical coordinates).
         array3d<complex_t> psi;
 
+        const QuantumState qs;
+
         /// @brief Maximum probability density value(|Ψ|^2).
         real_t max_pd;
 
@@ -78,18 +80,24 @@ namespace mangh { namespace hydrogenium
          */
         Mesh(const linspace<real_t>& radial,
              const linspace<real_t>& polar,
-             const linspace<real_t>& azimuthal
+             const linspace<real_t>& azimuthal,
+             const QuantumState& qs
             )
             : radial(radial)
             , polar(polar)
             , azimuthal(azimuthal)
-
             , psi(radial.size(), polar.size(), azimuthal.size())
-
-            , max_pd(std::numeric_limits<real_t>::lowest())
-            , max_real(std::numeric_limits<real_t>::lowest())
-            , normalizing_factor()
+            , qs(qs)
+            // , max_pd(std::numeric_limits<real_t>::lowest())
+            // , max_real(std::numeric_limits<real_t>::lowest())
+            // , normalizing_factor(0.0)
         {
+            compute_wave_function();
+
+            // The following calculation isn't necessary
+            // when we use a normalized function Ψ (for which the total probability ≈ 1).
+            // We do it just to check if that's really the case:
+            normalizing_factor = compute_total_probability();
         }
 
         ///////////////////////////////////////////////////////////////////
@@ -115,7 +123,7 @@ namespace mangh { namespace hydrogenium
             return radial[r] * cos(polar[theta]);
         }
 
-        void compute_wave_function(const QuantumState& qs)
+        void compute_wave_function()
         {
             max_pd = std::numeric_limits<real_t>::lowest();
             max_real = std::numeric_limits<real_t>::lowest();
@@ -140,11 +148,6 @@ namespace mangh { namespace hydrogenium
                     }
                 }
             }
-
-            // The following calculation isn't necessary
-            // when we use a normalized function Ψ (for which the total probability ≈ 1).
-            // We do it just to check if that's really the case:
-            normalizing_factor = compute_total_probability();
         }
 
         /**

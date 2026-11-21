@@ -117,14 +117,11 @@ int main(int argc, char** argv)
 
     Mesh mesh
     {
-        linspace<real_t>{ 0.0, radialMax, radialPoints },  //  radial coordinates (r)
-        linspace<real_t>{ 0.0, PI, polarPoints },		    //  polar coordinates (θ)
-        linspace<real_t>{ 0.0, 2.0 * PI, azimuthalPoints }     //  azimuthal coordinates (ϕ)
+        linspace<real_t>{ 0.0, radialMax, radialPoints },       //  radial coordinates (r)
+        linspace<real_t>{ 0.0, PI, polarPoints },               //  polar coordinates (θ)
+        linspace<real_t>{ 0.0, 2.0 * PI, azimuthalPoints },  //  azimuthal coordinates (ϕ)
+        qs
     };
-
-    // Compute wave function Ψ (psi) and normalizing factor
-    mesh.compute_wave_function(qs);
-
 
     /* Export domain data */
     export_data("grid_data.txt", [&](std::ostream& os) { mesh.export_grid_data(os /* , max_pd, max_real */); });
