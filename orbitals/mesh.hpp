@@ -105,24 +105,25 @@ namespace mangh { namespace hydrogenium
         ///     Methods
         ///
 
-        /// @brief Cartesian coordinate (x) from spherical coordinates (r, θ, φ).
+        /// @brief Cartesian coordinate (x) from spherical coordinates (r, θ, φ): `x = r·sin(θ)·cos(φ)`.
         real_t x(std::size_t r, std::size_t theta, std::size_t phi) const
         {
             return radial[r] * sin(polar[theta]) * cos(azimuthal[phi]);
         }
         
-        /// @brief Cartesian coordinate (y) from spherical coordinates (r, θ, φ).
+        /// @brief Cartesian coordinate (y) from spherical coordinates (r, θ, φ): `y = r·sin(θ)·sin(φ)`.
         real_t y(std::size_t r, std::size_t theta, std::size_t phi) const
         {
             return radial[r] * sin(polar[theta]) * sin(azimuthal[phi]);
         }
 
-        /// @brief Cartesian coordinate (z) from spherical coordinates (r, θ, φ).
+        /// @brief Cartesian coordinate (z) from spherical coordinates (r, θ, φ): `z = r·cos(θ)`.
         real_t z(std::size_t r, std::size_t theta, [[maybe_unused]] std::size_t phi) const
         {
             return radial[r] * cos(polar[theta]);
         }
 
+        /// @brief Computes the wave function (Ψ) values on the mesh.
         void compute_wave_function()
         {
             max_pd = std::numeric_limits<real_t>::lowest();
@@ -231,6 +232,17 @@ namespace mangh { namespace hydrogenium
             return total_probability;
         }
 
+        /**
+         * @brief Exports the mesh grid data:
+         * 
+         * - size of the radial array,
+         * - size of the polar array,
+         * - size of the azimuthal array,
+         * - the maximum probability density |Ψ|²,
+         * - the maximum real part of Ψ.
+         *
+         * @param os The output stream to write the data to.
+         */
         void export_grid_data(std::ostream &os) const
         {
             os
@@ -242,6 +254,17 @@ namespace mangh { namespace hydrogenium
               << std::endl;
         }
 
+        /**
+         * @brief Exports the probability density data
+         *
+         * - coordinate x,
+         * - coordinate z,
+         * - probability density |Ψ|²
+         *
+         * for the central nodes of the mesh (the last azimuthal node is skipped).
+         *
+         * @param os The output stream to write the data to.
+         */
         void export_probability_density(std::ostream &os) const
         {
             /* Export psi central nodes */
