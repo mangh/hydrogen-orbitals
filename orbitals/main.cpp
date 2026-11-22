@@ -9,8 +9,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdlib>
-#include <ios>
-#include <fstream>
+#include <filesystem>
 #include <iostream>
 #include <iomanip>
 #include <limits>
@@ -27,21 +26,6 @@
 
 // using namespace mangh::math;
 using namespace mangh::hydrogenium;
-
-/**
- * @brief Opens @p file_name for writing and passes the stream to @p export_func.
- *
- * @param file_name   - output file name,
- * @param export_func - any callable invocable as export_func(std::ostream&).
- */
-template<typename ExportFunc>
-void export_data(const char* file_name, ExportFunc&& export_func)
-{
-    std::ofstream myfile(file_name/* , std::ios::binary */);
-    export_func(myfile);
-    myfile.close();
-    if (!myfile) std::cerr << "Failed to write '" << file_name << "'\n";
-}
 
 int main(int argc, char** argv)
 {
@@ -80,7 +64,15 @@ int main(int argc, char** argv)
                 " must satisfy -l <= m <= l (l = " + std::to_string(angularQuantumNumber) + ")");
     });
 
+    std::string outputDir;
+    app.add_option("-o,--output", outputDir, "Output directory (default: results/n<n>_l<l>_m<m>)");
+
     CLI11_PARSE(app, argc, argv);
+
+    if (outputDir.empty())
+        outputDir = "results/n" + std::to_string(principalQuantumNumber)
+                  + "_l" + std::to_string(angularQuantumNumber)
+                  + "_m" + std::to_string(magneticQuantumNumber);
 
     constexpr real_t PI = PI_V<real_t>;
 
@@ -105,12 +97,12 @@ int main(int argc, char** argv)
     const auto radialPoints = static_cast<std::size_t>(std::lround(radialMax / radialStep)) + 1;
 
     // Polar grid θ ∈ [0, π]:
-    // - an odd number of points, so that the slice index polarPoints/2 lies exactly at θ = π/2 (XY-plane exports),
+    // - an odd number of points, so that a node lies exactly at θ = π/2 (XY-plane plots),
     // - N = polarPoints - 1 >= 2l intervals: the θ integral (Clenshaw–Curtis, see Mesh::compute_total_probability) is then exact for |Yl,m|².
     const std::size_t polarPoints = std::max<std::size_t>(21, 2 * qs.l + 1);
 
     // Azimuthal grid ϕ ∈ [0, 2π] (the last node duplicates the first):
-    // - an even number of intervals, so that the index azimuthalPoints/2 lies exactly at ϕ = π (opposite half-plane in the XZ-plane exports),
+    // - an even number of intervals, so that for every node ϕ there is also a node at ϕ + π (the opposite half-plane in the XZ-plane plots),
     // - >= 4|m| intervals: at least 4 samples per period of cos(mϕ) in the XY-plane plots
     //   (and > 2|m|, which also keeps the ϕ integral exact for real orbitals, where |Ψ|² contains cos²(mϕ)).
     const std::size_t azimuthalPoints = std::max<std::size_t>(40, static_cast<std::size_t>(4 * std::abs(qs.m))) + 1;
@@ -123,83 +115,20 @@ int main(int argc, char** argv)
         qs
     };
 
-    /* Export domain data */
-    export_data("grid_data.txt", [&](std::ostream& os) { mesh.export_grid_data(os /* , max_pd, max_real */); });
+    /* Save the mesh (coordinates and Ψ) for visualization */
+    std::filesystem::create_directories(outputDir);
+    mesh.save(outputDir);
+    std::cout << "Mesh saved to " << std::filesystem::absolute(outputDir).string() << std::endl;
 
-    /* Export probability density data */
-    export_data("data.txt", [&](std::ostream& os) { mesh.export_probability_density(os); });
-
-    /* Export psi real data */
-    export_data("data_re.txt", [&](std::ostream& os) { mesh.export_psi_real(os); });
-
-    /* Export psi im data */
-    export_data("data_im.txt", [&](std::ostream& os) { mesh.export_psi_im(os); });
-
-    /* Export psi real data at n_phi/2 */
-    export_data("data_re_phi_2.txt", [&](std::ostream& os) { mesh.export_data_phi_2(os); });
-
-    /* Export psi im data at n_phi/2 */
-    export_data("data_im_phi_2.txt", [&](std::ostream& os) { mesh.export_data_phi_2_im(os); });
-
-    // char* prev_loc = std::setlocale(LC_ALL, nullptr);
-    // std::setlocale(LC_ALL, "pl_PL.UTF-8");
-    // if (const char* loc = std::setlocale(LC_ALL, "pl_PL.UTF-8"))
-    //     std::printf("New LC_ALL locale: %s\n", loc);
-
+    /* Print the normalization factor */
     constexpr auto max_precision{std::numeric_limits<real_t>::digits10 + 1};     
-
-    /* Print some results */
-    for(std::size_t r = 0; r < mesh.radial.size(); ++r)
-    {
-        std::size_t theta = mesh.azimuthal.size() / 4;
-        std::size_t phi = mesh.polar.size() / 2;
-        std::cout
-            << "real psi[" << r << "][" << theta << "][" << phi << "]: " << std::fixed << mesh.psi[r][theta][phi].real()
-            << ", im psi[" << r << "][" << theta << "][" << phi << "]: " << std::fixed << mesh.psi[r][theta][phi].imag()
-            << std::endl
-            ;
-    }
-
-    // // constexpr auto max_precision{std::numeric_limits<real_t>::digits10 + 1};     
-    // std::cout
-    //     << "R = " << radii.back() << "\t"
-    //     << "nr = " << dd.n_r << " (" << radii.size() << ")\t"
-    //     << "n_theta = " << dd.n_theta << " (" << thetas.size() << ")\t"
-    //     << "n_phi = " << dd.n_phi << " (" << phis.size() << ")"
-    //     << std::endl
-        
-    //     << "r\ttheta\tphi\tpsi_re\tpsi_im"
-    //     << std::endl
-    //     ;
-
-    // // https://stackoverflow.com/questions/15220861/how-can-i-set-the-decimal-separator-to-be-a-comma
-    // std::cout.imbue(std::locale(std::cout.getloc(), new punct_facet<char, ','>));
-
-    // // for(std::size_t i = 0; i < dd.n_r; ++i)
-    // // {
-    // //     std::size_t theta = dd.n_theta / 4;
-    // //     std::size_t phi = dd.n_phi / 2;
-    // //     std::cout
-    // //         << i << "\t"
-    // //         << theta << "\t"
-    // //         << phi << "\t"
-    // //         << std::scientific
-    // //         << std::setprecision(max_precision)
-    // //         << mesh.psi[i][theta][phi].real() << "\t"
-    // //         << mesh.psi[i][theta][phi].imag()
-    // //         << std::endl
-    // //         ;
-    // // }
-
     std::cout
         << std::scientific
         << std::setprecision(max_precision)
         << std::fixed
-        //<< "error in percentage : " << mesh.error << std::endl
-        << "normalizing constant : " << std::sqrt(mesh.normalizing_factor) << std::endl;
-
-    // if (const char* loc = std::setlocale(LC_ALL, prev_loc/*.c_str()*/))
-    //     std::printf("Restorred LC_ALL locale: %s\n", loc);
+        << "Normalization factor, i.e., the total probability for the entire volume defined by the grid: "
+        << std::sqrt(mesh.normalizing_factor)
+        << std::endl;
 
     return EXIT_SUCCESS;
 }

@@ -22,7 +22,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/orbitals/visualize_data.py",
             "console": "integratedTerminal",
-            "args": [],
+            "args": ["results/n4_l3_m1"],
             "cwd": "${workspaceFolder}"
         }
     ]

@@ -1,14 +1,7 @@
 .vs/
-boost/
 build/
 doc/
 out/
-orbitals/results/
 
-# Ignore all output files of the orbitals.exe application
-data_im_phi_2.txt
-data_im.txt
-data_re_phi_2.txt
-data_re.txt
-data.txt
-grid_data.txt
+# Output of the orbitals.exe application (see the --output option)
+results/

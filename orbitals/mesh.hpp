@@ -4,13 +4,15 @@
 #include <cmath>
 #include <complex>
 #include <cstddef>
-#include <limits>
+#include <cstdint>
+#include <filesystem>
 #include <ostream>
 #include <vector>
 
 #include "math/constants.hpp"
 #include "linspace.hpp"
 #include "numbers.hpp"
+#include "npy.hpp"
 #include "array3d.hpp"
 #include "quantum_state.hpp"
 
@@ -54,12 +56,6 @@ namespace mangh { namespace hydrogenium
 
         const QuantumState qs;
 
-        /// @brief Maximum probability density value(|Ψ|^2).
-        real_t max_pd;
-
-        /// @brief Maximum value of the real part of the probability amplitude (Ψ).
-        real_t max_real;
-
         /// @brief Total probability (or normalizing factor) for the entire area covered by the coordinates (r, θ, φ).
         real_t normalizing_factor;
 
@@ -88,9 +84,6 @@ namespace mangh { namespace hydrogenium
             , azimuthal(azimuthal)
             , psi(radial.size(), polar.size(), azimuthal.size())
             , qs(qs)
-            // , max_pd(std::numeric_limits<real_t>::lowest())
-            // , max_real(std::numeric_limits<real_t>::lowest())
-            // , normalizing_factor(0.0)
         {
             compute_wave_function();
 
@@ -105,47 +98,16 @@ namespace mangh { namespace hydrogenium
         ///     Methods
         ///
 
-        /// @brief Cartesian coordinate (x) from spherical coordinates (r, θ, φ): `x = r·sin(θ)·cos(φ)`.
-        real_t x(std::size_t r, std::size_t theta, std::size_t phi) const
-        {
-            return radial[r] * sin(polar[theta]) * cos(azimuthal[phi]);
-        }
-        
-        /// @brief Cartesian coordinate (y) from spherical coordinates (r, θ, φ): `y = r·sin(θ)·sin(φ)`.
-        real_t y(std::size_t r, std::size_t theta, std::size_t phi) const
-        {
-            return radial[r] * sin(polar[theta]) * sin(azimuthal[phi]);
-        }
-
-        /// @brief Cartesian coordinate (z) from spherical coordinates (r, θ, φ): `z = r·cos(θ)`.
-        real_t z(std::size_t r, std::size_t theta, [[maybe_unused]] std::size_t phi) const
-        {
-            return radial[r] * cos(polar[theta]);
-        }
-
         /// @brief Computes the wave function (Ψ) values on the mesh.
         void compute_wave_function()
         {
-            max_pd = std::numeric_limits<real_t>::lowest();
-            max_real = std::numeric_limits<real_t>::lowest();
-
             for (std::size_t r = 0; r < radial.size(); ++r)
             {
                 for (std::size_t theta = 0; theta < polar.size(); ++theta)
                 {
                     for (std::size_t phi = 0; phi < azimuthal.size(); ++phi)
                     {
-                        // probability amplitude (Ψ) 
-                        complex_t pa = qs.WaveFunction(radial[r], polar[theta], azimuthal[phi]);
-                        if (pa.real() > max_real)
-                            max_real = pa.real();
-
-                        // probability density (|Ψ|^2)
-                        real_t pd = std::norm(pa);
-                        if (pd > max_pd)
-                            max_pd = pd;
-
-                        psi[r][theta][phi] = pa;
+                        psi[r][theta][phi] = qs.WaveFunction(radial[r], polar[theta], azimuthal[phi]);
                     }
                 }
             }
@@ -233,148 +195,30 @@ namespace mangh { namespace hydrogenium
         }
 
         /**
-         * @brief Exports the mesh grid data:
-         * 
-         * - size of the radial array,
-         * - size of the polar array,
-         * - size of the azimuthal array,
-         * - the maximum probability density |Ψ|²,
-         * - the maximum real part of Ψ.
+         * @brief Saves the mesh as NumPy (.npy) files in the directory @p dir:
          *
-         * @param os The output stream to write the data to.
+         * - `r.npy`, `theta.npy`, `phi.npy` - coordinates (r, θ, ϕ),
+         * - `psi.npy` - probability amplitude Ψ, complex array of shape (r, θ, ϕ),
+         * - `qn.npy`  - quantum numbers [n, l, m].
+         *
+         * @param dir - output directory (must exist).
          */
-        void export_grid_data(std::ostream &os) const
+        void save(const std::filesystem::path& dir) const
         {
-            os
-              << radial.size() << " "
-              << polar.size() << " "
-              << azimuthal.size() << " "
-              << max_pd << " "
-              << max_real
-              << std::endl;
-        }
+            npy::save(dir / "r.npy", radial.data(), { radial.size() });
+            npy::save(dir / "theta.npy", polar.data(), { polar.size() });
+            npy::save(dir / "phi.npy", azimuthal.data(), { azimuthal.size() });
 
-        /**
-         * @brief Exports the probability density data
-         *
-         * - coordinate x,
-         * - coordinate z,
-         * - probability density |Ψ|²
-         *
-         * for the central nodes of the mesh (the last azimuthal node is skipped).
-         *
-         * @param os The output stream to write the data to.
-         */
-        void export_probability_density(std::ostream &os) const
-        {
-            /* Export psi central nodes */
-            for (std::size_t r = 0; r < radial.size(); ++r)
-            {
-                for (std::size_t theta = 0; theta < polar.size(); ++theta)
+            npy::save<complex_t>(dir / "psi.npy", { radial.size(), polar.size(), azimuthal.size() },
+                [&](std::ostream& os)
                 {
-                    for (std::size_t phi = 0; phi < 1; ++phi)
-                    {
-                        os << x(r, theta, phi) << " " << z(r, theta, phi) << " " << norm(psi[r][theta][phi]) << std::endl;
-                    }
-                }
-            }
+                    for (std::size_t r = 0; r < radial.size(); ++r)
+                        for (std::size_t theta = 0; theta < polar.size(); ++theta)
+                            npy::write_data(os, psi[r][theta].data(), azimuthal.size());
+                });
 
-            for (std::size_t r = 0; r < radial.size(); ++r)
-            {
-                for (std::size_t theta = 0; theta < polar.size(); ++theta)
-                {
-                    for (std::size_t phi = azimuthal.size() / 2; phi < azimuthal.size() / 2 + 1; ++phi)
-                    {
-                        os << x(r, theta, phi) << " " << z(r, theta, phi) << " " << norm(psi[r][theta][phi]) << std::endl;
-                    }
-                }
-            }
-        }
-
-        void export_psi_real(std::ostream &os) const
-        {
-            std::size_t phi_slice = 0; // Should be a value between 0 and azimuthal.size() / 2 - 2
-
-            /* Export psi central nodes */
-            for (std::size_t r = 0; r < radial.size(); ++r)
-            {
-                for (std::size_t theta = 0; theta < polar.size(); ++theta)
-                {
-                    for (std::size_t phi = phi_slice; phi < phi_slice + 1; ++phi)
-                    {
-                        os << x(r, theta, phi) << " " << z(r, theta, phi) << " " << psi[r][theta][phi].real() << std::endl;
-                    }
-                }
-            }
-
-            for (std::size_t r = 0; r < radial.size(); ++r)
-            {
-                for (std::size_t theta = 0; theta < polar.size(); ++theta)
-                {
-                    for (std::size_t phi = azimuthal.size() / 2 + phi_slice; phi < azimuthal.size() / 2 + phi_slice + 1; ++phi)
-                    {
-                        os << x(r, theta, phi) << " " << z(r, theta, phi) << " " << psi[r][theta][phi].real() << std::endl;
-                    }
-                }
-            }
-        }
-
-        void export_psi_im(std::ostream &os) const
-        {
-            std::size_t phi_slice = 0; // Should be a value between 0 and polar.size() / 2 - 2
-
-            /* Export psi central nodes */
-            for (std::size_t r = 0; r < radial.size(); ++r)
-            {
-                for (std::size_t theta = 0; theta < polar.size(); ++theta)
-                {
-                    for (std::size_t phi = phi_slice; phi < phi_slice + 1; ++phi)
-                    {
-                        os << x(r, theta, phi) << " " << z(r, theta, phi) << " " << psi[r][theta][phi].imag() << std::endl;
-                    }
-                }
-            }
-
-            for (std::size_t r = 0; r < radial.size(); ++r)
-            {
-                for (std::size_t theta = 0; theta < polar.size(); ++theta)
-                {
-                    for (std::size_t phi = azimuthal.size() / 2 + phi_slice; phi < azimuthal.size() / 2 + phi_slice + 1; ++phi)
-                    {
-                        os << x(r, theta, phi) << " " << z(r, theta, phi) << " " << psi[r][theta][phi].imag() << std::endl;
-                    }
-                }
-            }
-        }
-
-        void export_data_phi_2(std::ostream &os) const
-        {
-            /* Export psi central nodes */
-            for (std::size_t r = 0; r < radial.size(); ++r)
-            {
-                for (std::size_t theta = polar.size() / 2; theta < polar.size() / 2 + 1; ++theta)
-                {
-                    for (std::size_t phi = 0; phi < azimuthal.size(); ++phi)
-                    {
-                        os << x(r, theta, phi) << " " << y(r, theta, phi) << " " << psi[r][theta][phi].real() << std::endl;
-                    }
-                }
-            }
-        }
-
-        void export_data_phi_2_im(std::ostream &os) const
-        {
-            /* Export psi central nodes */
-            for (std::size_t r = 0; r < radial.size(); ++r)
-            {
-                for (std::size_t theta = polar.size() / 2; theta < polar.size() / 2 + 1; ++theta)
-                {
-                    for (std::size_t phi = 0; phi < azimuthal.size(); ++phi)
-                    {
-                        os << x(r, theta, phi) << " " << y(r, theta, phi) << " " << psi[r][theta][phi].imag() << std::endl;
-                    }
-                }
-            }
+            const std::int32_t qn[] = { static_cast<std::int32_t>(qs.n), static_cast<std::int32_t>(qs.l), qs.m };
+            npy::save(dir / "qn.npy", qn, { 3 });
         }
     };
 }}

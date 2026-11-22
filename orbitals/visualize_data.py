@@ -1,149 +1,85 @@
-import numpy as np
+"""Plots a planar slice of a hydrogen orbital saved by orbitals.exe (see Mesh::save).
+
+The data directory holds the mesh coordinates r, theta, phi and the complex wave function
+psi[r, theta, phi] as NumPy arrays; any plane and quantity can be cut out of it here.
+
+Examples:
+    python visualize_data.py results/n4_l3_m1
+    python visualize_data.py results/n4_l3_m1 --quantity real --plane xy
+    python visualize_data.py results/n4_l3_m1 --plane xz --angle 45
+"""
+
+import argparse
+from pathlib import Path
+
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-from numpy import *
+import numpy as np
 
-# Numbers of radial, polar, and azimuthal coordinates,
-# maximum probability density (max_pd) and maximum real value (max_real)
-radial_sz, azimuthal_sz, polar_sz, max_pd, max_real = np.genfromtxt('grid_data.txt', unpack=True)
+QUANTITIES = {
+    "density": (lambda psi: np.abs(psi) ** 2, "|Ψ|²"),
+    "real": (lambda psi: psi.real, "Re Ψ"),
+    "imag": (lambda psi: psi.imag, "Im Ψ"),
+}
 
-radial_sz = int(radial_sz)
-polar_sz = int(polar_sz)
-azimuthal_sz = int(azimuthal_sz)
 
-X, Z, Psi_sq = np.genfromtxt('data.txt', unpack=True)
-X_r, Z_r, Psi_r = np.genfromtxt('data_re.txt', unpack=True)
-X_im, Z_im, Psi_im = np.genfromtxt('data_im.txt', unpack=True)
-X_r_phi_2, Y_r_phi_2, Psi_r_phi_2 = np.genfromtxt('data_re_phi_2.txt', unpack=True)
-X_r_phi_2_im, Y_r_phi_2_im, Psi_r_phi_2_im = np.genfromtxt('data_im_phi_2.txt', unpack=True)
+def nearest(grid, angle):
+    """Index of the grid node closest to the given angle (mod 2π)."""
+    diff = np.angle(np.exp(1j * (grid - angle)))
+    return int(np.argmin(np.abs(diff)))
 
-X_2d = np.zeros((radial_sz, azimuthal_sz))
-Z_2d = np.zeros((radial_sz, azimuthal_sz))
-Psi_sq_2d = np.zeros((radial_sz, azimuthal_sz))
 
-X_2d_m = np.zeros((radial_sz, azimuthal_sz))
-Z_2d_m = np.zeros((radial_sz, azimuthal_sz))
-Psi_sq_2d_m = np.zeros((radial_sz, azimuthal_sz))
+def main():
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("data", type=Path, help="directory written by orbitals.exe")
+    parser.add_argument("--quantity", choices=QUANTITIES, default="density")
+    parser.add_argument("--plane", choices=["xz", "xy"], default="xz",
+                        help="xz: vertical plane through the Z axis; xy: plane (or cone) of constant theta")
+    parser.add_argument("--angle", type=float,
+                        help="xz: azimuth phi of the plane in degrees (default 0); xy: polar angle theta in degrees (default 90)")
+    parser.add_argument("--levels", type=int, default=100, help="number of contour levels")
+    args = parser.parse_args()
 
-X_r_2d = np.zeros((radial_sz, azimuthal_sz))
-Z_r_2d = np.zeros((radial_sz, azimuthal_sz))
-Psi_r_2d = np.zeros((radial_sz, azimuthal_sz))
+    r, theta, phi, psi = (np.load(args.data / f"{name}.npy") for name in ("r", "theta", "phi", "psi"))
+    n, l, m = np.load(args.data / "qn.npy")
 
-X_r_2d_m = np.zeros((radial_sz, azimuthal_sz))
-Z_r_2d_m = np.zeros((radial_sz, azimuthal_sz))
-Psi_r_2d_m = np.zeros((radial_sz, azimuthal_sz))
+    func, label = QUANTITIES[args.quantity]
+    f = func(psi)  # shape (r, θ, ϕ)
 
-X_im_2d = np.zeros((radial_sz, azimuthal_sz))
-Z_im_2d = np.zeros((radial_sz, azimuthal_sz))
-Psi_im_2d = np.zeros((radial_sz, azimuthal_sz))
+    if args.plane == "xz":
+        # Two opposite half-planes ϕ0 and ϕ0 + π, joined along θ into one full turn
+        # (angle measured from +Z: 0..π on the ϕ0 side, π..2π on the opposite side).
+        phi0 = np.radians(args.angle if args.angle is not None else 0.0)
+        i0, i1 = nearest(phi, phi0), nearest(phi, phi0 + np.pi)
+        angle = np.concatenate([theta, 2 * np.pi - theta[::-1]])
+        F = np.concatenate([f[:, :, i0], f[:, ::-1, i1]], axis=1)
+        R, A = np.meshgrid(r, angle, indexing="ij")
+        X, Y = R * np.sin(A), R * np.cos(A)
+        xlabel, ylabel = ("X" if i0 == 0 else f"horizontal axis at ϕ = {np.degrees(phi[i0]):.0f}°"), "Z"
+        where = f"ϕ = {np.degrees(phi[i0]):.0f}°"
+    else:
+        theta0 = np.radians(args.angle if args.angle is not None else 90.0)
+        j = int(np.argmin(np.abs(theta - theta0)))
+        F = f[:, j, :]
+        R, P = np.meshgrid(r, phi, indexing="ij")
+        X, Y = R * np.cos(P), R * np.sin(P)
+        xlabel, ylabel = "X", "Y"
+        where = f"θ = {np.degrees(theta[j]):.0f}°"
 
-X_im_2d_m = np.zeros((radial_sz, azimuthal_sz))
-Z_im_2d_m = np.zeros((radial_sz, azimuthal_sz))
-Psi_im_2d_m = np.zeros((radial_sz, azimuthal_sz))
+    vmax = np.abs(F).max() or 1.0
+    if args.quantity == "density":
+        levels, cmap = np.linspace(0, vmax, args.levels), "inferno"
+    else:
+        levels, cmap = np.linspace(-vmax, vmax, args.levels), "RdBu_r"
 
-X_r_phi_2_2d = np.zeros((radial_sz, polar_sz))
-Y_r_phi_2_2d = np.zeros((radial_sz, polar_sz))
-Psi_r_phi_2_2d = np.zeros((radial_sz, polar_sz))
+    fig, ax = plt.subplots()
+    cont = ax.contourf(X, Y, F, levels=levels, cmap=cmap)
+    fig.colorbar(cont, ax=ax, label=label)
+    ax.set_aspect("equal")
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    ax.set_title(f"{label}   n={n}, l={l}, m={m}   ({args.plane.upper()}, {where})")
+    plt.show()
 
-X_r_phi_2_2d_im = np.zeros((radial_sz, polar_sz))
-Y_r_phi_2_2d_im = np.zeros((radial_sz, polar_sz))
-Psi_r_phi_2_2d_im = np.zeros((radial_sz, polar_sz))
 
-num = 0
-for i in range(0, radial_sz):
-    for j in range(0, azimuthal_sz):
-        X_2d[i][j] = X[num]
-        Z_2d[i][j] = Z[num]
-        Psi_sq_2d[i][j] = Psi_sq[num]
-
-        X_r_2d[i][j] = X_r[num]
-        Z_r_2d[i][j] = Z_r[num]
-        Psi_r_2d[i][j] = Psi_r[num]        
-
-        X_im_2d[i][j] = X_im[num]
-        Z_im_2d[i][j] = Z_im[num]
-        Psi_im_2d[i][j] = Psi_im[num] 
-        
-        num = num + 1 
-
-for i in range(0, radial_sz):
-    for j in range(0, azimuthal_sz):
-        X_2d_m[i][j] = X[num]
-        Z_2d_m[i][j] = Z[num]
-        Psi_sq_2d_m[i][j] = Psi_sq[num]
-
-        X_r_2d_m[i][j] = X_r[num]
-        Z_r_2d_m[i][j] = Z_r[num]
-        Psi_r_2d_m[i][j] = Psi_r[num]
-
-        X_im_2d_m[i][j] = X_im[num]
-        Z_im_2d_m[i][j] = Z_im[num]
-        Psi_im_2d_m[i][j] = Psi_im[num]        
-        
-        num = num + 1
-
-X_t = np.zeros((2*radial_sz, azimuthal_sz))
-Z_t = np.zeros((2*radial_sz, azimuthal_sz))
-Psi_p = np.zeros((2*radial_sz, azimuthal_sz))
-
-X_r_t = np.zeros((2*radial_sz, azimuthal_sz))
-Z_r_t = np.zeros((2*radial_sz, azimuthal_sz))
-Psi_r_t = np.zeros((2*radial_sz, azimuthal_sz))
-
-X_im_t = np.zeros((2*radial_sz, azimuthal_sz))
-Z_im_t = np.zeros((2*radial_sz, azimuthal_sz))
-Psi_im_t = np.zeros((2*radial_sz, azimuthal_sz))
-
-for i in range(0, radial_sz):
-    for j in range(0, azimuthal_sz):
-        X_t[i][j] = X_2d[i][j]
-        Z_t[i][j] = Z_2d[i][j]
-        Psi_p[i][j] = Psi_sq_2d[i][j]
-
-        X_r_t[i][j] = X_r_2d[i][j]
-        Z_r_t[i][j] = Z_r_2d[i][j]
-        Psi_r_t[i][j] = Psi_r_2d[i][j]
-
-        X_im_t[i][j] = X_im_2d[i][j]
-        Z_im_t[i][j] = Z_im_2d[i][j]
-        Psi_im_t[i][j] = Psi_im_2d[i][j]
-
-for i in range(0, radial_sz):
-    for j in range(0, azimuthal_sz):
-        X_t[i+radial_sz][j] = X_2d_m[i][j]
-        Z_t[i+radial_sz][j] = Z_2d_m[i][j]
-        Psi_p[i+radial_sz][j] = Psi_sq_2d_m[i][j]
-
-        X_r_t[i+radial_sz][j] = X_r_2d_m[i][j]
-        Z_r_t[i+radial_sz][j] = Z_r_2d_m[i][j]
-        Psi_r_t[i+radial_sz][j] = Psi_r_2d_m[i][j]
-
-        X_im_t[i+radial_sz][j] = X_im_2d_m[i][j]
-        Z_im_t[i+radial_sz][j] = Z_im_2d_m[i][j]
-        Psi_im_t[i+radial_sz][j] = Psi_im_2d_m[i][j]        
-
-num = 0
-for i in range(0, radial_sz):
-    for j in range(0, polar_sz):
-        X_r_phi_2_2d[i][j] = X_r_phi_2[num]
-        Y_r_phi_2_2d[i][j] = Y_r_phi_2[num]
-        Psi_r_phi_2_2d[i][j] = Psi_r_phi_2[num]
-
-        X_r_phi_2_2d_im[i][j] = X_r_phi_2_im[num]
-        Y_r_phi_2_2d_im[i][j] = Y_r_phi_2_im[num]
-        Psi_r_phi_2_2d_im[i][j] = Psi_r_phi_2_im[num]
-        
-        num = num + 1
-        
-        
-cont = plt.contourf(X_t, Z_t, Psi_p, linspace(0, max_pd, 300), cmap = 'RdBu')
-# cont = plt.contourf(X_r_t, Z_r_t, Psi_r_t, linspace(-max_real, max_real, 300), cmap = 'RdBu')
-# cont = plt.contourf(X_im_t, Z_im_t, Psi_im_t, linspace(-max_real, max_real, 300), cmap = 'RdBu')
-# cont = plt.contourf(X_r_phi_2_2d, Y_r_phi_2_2d, Psi_r_phi_2_2d, linspace(-max_real, max_real, 300), cmap = 'RdBu')
-# cont = plt.contourf(X_r_phi_2_2d_im, Y_r_phi_2_2d_im, Psi_r_phi_2_2d_im, linspace(-max_real, max_real, 300), cmap = 'RdBu')
-
-plt.colorbar()
-plt.xlabel("X")
-plt.ylabel("Z")
-
-plt.show()
+if __name__ == "__main__":
+    main()
