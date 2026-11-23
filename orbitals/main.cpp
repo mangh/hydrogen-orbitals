@@ -17,14 +17,12 @@
 
 #include <CLI/CLI.hpp>
 
-#include "parameters.hpp"
 #include "quantum_state.hpp"
 #include "mesh.hpp"
 #include "math/constants.hpp"
 #include "linspace.hpp"
 #include "numbers.hpp"
 
-// using namespace mangh::math;
 using namespace mangh::hydrogenium;
 
 int main(int argc, char** argv)
@@ -38,19 +36,22 @@ try
     app.get_formatter()->enable_option_type_names(false);
     app.get_formatter()->long_option_alignment_ratio( 0.2f /* 1/5*/);
 
+    constexpr int max_n = QuantumState::max_n;
+
     int principalQuantumNumber;
-    app.add_option("-n,--principal", principalQuantumNumber, "Principal quantum number (1 <= n <= 20)")
-        ->check(CLI::Range(1, 20))
+    app.add_option("-n,--principal", principalQuantumNumber,
+                   "Principal quantum number (1 <= n <= " + std::to_string(max_n) + ")")
+        ->check(CLI::Range(1, max_n))
         ->required();
 
     int angularQuantumNumber;
     app.add_option("-l,--angular", angularQuantumNumber, "Azimuthal number (0 <= l < n)")
-        ->check(CLI::Range(0, 19))
+        ->check(CLI::Range(0, max_n - 1))
         ->required();
 
     int magneticQuantumNumber;
     app.add_option("-m,--magnetic", magneticQuantumNumber, "Magnetic quantum number (-l <= m <= l)")
-        ->check(CLI::Range(-19, 19))
+        ->check(CLI::Range(-(max_n - 1), max_n - 1))
         ->required();
 
     // cross-option checks: run once after all options are parsed and stored
@@ -82,14 +83,6 @@ try
         principalQuantumNumber,  // n - principal quantum number
         angularQuantumNumber,    // l - azimuthal number
         magneticQuantumNumber,   // m - magnetic quantum number
-    };
-
-    Parameters params
-    {
-        1.0,   // h_  - Planck constant (???),
-        1.0,   // mp_ - mass of particle,
-        1.0,   // kp_ - potential constant (???),
-        1.0    // ke_ - constant in energy level equation (???).
     };
 
     // Radial range scales with n (see QuantumState::RadialExtent), with a fixed step

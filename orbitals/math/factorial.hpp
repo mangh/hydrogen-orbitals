@@ -18,14 +18,14 @@ namespace mangh { namespace math
      * 
      */
     template<typename T>
-    static T factorial(unsigned n)
+    inline T factorial(unsigned n)
     {
         static_assert(
             std::is_floating_point<T>::value,
             "T factorial(n): function template requires a floating-point type parameter T."
         );
 
-        return std::tgamma(n + 1);
+        return std::tgamma(static_cast<T>(n) + T{1});
     }
 }}
 

@@ -1,26 +1,20 @@
-#ifndef MANGH_HYDROGEN_SOLUTION_DATA_HPP
-#define MANGH_HYDROGEN_SOLUTION_DATA_HPP
+#ifndef MANGH_HYDROGENIUM_MESH_HPP
+#define MANGH_HYDROGENIUM_MESH_HPP
 
 #include <cmath>
 #include <complex>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
-#include <ostream>
 #include <vector>
 
 #include "math/constants.hpp"
+#include "math/kahan_sum.hpp"
 #include "linspace.hpp"
 #include "numbers.hpp"
 #include "npy.hpp"
 #include "array3d.hpp"
 #include "quantum_state.hpp"
-
-#define KahanSummation(total, addend, error)        \
-                real_t addend_ = addend - error;    \
-                real_t total_ = total + addend_;    \
-                error = (total_ - total) - addend_; \
-                total = total_;
 
 namespace mangh { namespace hydrogenium
 {
@@ -32,11 +26,6 @@ namespace mangh { namespace hydrogenium
      */
     struct Mesh
     {
-        ///////////////////////////////////////////////////////////////////
-        ///
-        ///     Constants
-        ///
-
         ///////////////////////////////////////////////////////////////////
         ///
         ///     Properties
@@ -54,6 +43,7 @@ namespace mangh { namespace hydrogenium
         /// @brief Probability amplitude (the codomain of the wave function Ψ in spherical coordinates).
         array3d<complex_t> psi;
 
+        /// @brief Quantum state (n, l, m) the mesh is computed for.
         const QuantumState qs;
 
         /// @brief Total probability ∫|Ψ|² dV over the volume covered by the coordinates (r, θ, φ).
@@ -70,9 +60,12 @@ namespace mangh { namespace hydrogenium
         Mesh() = delete;
 
         /**
-         * @brief Mesh constructor.
+         * @brief Mesh constructor: computes Ψ of the quantum state @p qs on the mesh and integrates |Ψ|².
          *
-         *
+         * @param radial    - radial nodes r (evenly spaced, starting at 0),
+         * @param polar     - polar nodes θ (evenly spaced on [0, π], both poles included: see clenshaw_curtis_weights),
+         * @param azimuthal - azimuthal nodes ϕ (evenly spaced on [0, 2π], the last node duplicating the first),
+         * @param qs        - quantum state (n, l, m).
          */
         Mesh(const linspace<real_t>& radial,
              const linspace<real_t>& polar,
@@ -98,19 +91,28 @@ namespace mangh { namespace hydrogenium
         ///     Methods
         ///
 
-        /// @brief Computes the wave function (Ψ) values on the mesh.
+        /**
+         * @brief Computes the wave function (Ψ) values on the mesh.
+         *
+         * @remarks Ψ(r,θ,ϕ) = Rn,l(r) · Yl,m(θ,ϕ) is separable, so Rn,l is evaluated once per radial node
+         * and Yl,m once per angular node (θ,ϕ); each mesh value is then a single product
+         * (the same product as QuantumState::WaveFunction, hence the same result).
+         */
         void compute_wave_function()
         {
+            std::vector<real_t> R(radial.size());
             for (std::size_t r = 0; r < radial.size(); ++r)
-            {
+                R[r] = qs.Radial(radial[r]);
+
+            std::vector<complex_t> Y(polar.size() * azimuthal.size());
+            for (std::size_t theta = 0; theta < polar.size(); ++theta)
+                for (std::size_t phi = 0; phi < azimuthal.size(); ++phi)
+                    Y[theta * azimuthal.size() + phi] = qs.Angular(polar[theta], azimuthal[phi]);
+
+            for (std::size_t r = 0; r < radial.size(); ++r)
                 for (std::size_t theta = 0; theta < polar.size(); ++theta)
-                {
                     for (std::size_t phi = 0; phi < azimuthal.size(); ++phi)
-                    {
-                        psi[r][theta][phi] = qs.WaveFunction(radial[r], polar[theta], azimuthal[phi]);
-                    }
-                }
-            }
+                        psi(r, theta, phi) = R[r] * Y[theta * azimuthal.size() + phi];
         }
 
         /**
@@ -147,7 +149,8 @@ namespace mangh { namespace hydrogenium
                 for (std::size_t k = 1; k <= N / 2; ++k)
                 {
                     const real_t b = (2 * k == N) ? 1.0 : 2.0;
-                    s += b / (4.0 * k * k - 1.0) * std::cos(2.0 * k * theta);
+                    const auto kr = static_cast<real_t>(k);
+                    s += b / (4.0 * kr * kr - 1.0) * std::cos(2.0 * kr * theta);
                 }
 
                 const real_t c = (j == 0 || j == N) ? 1.0 : 2.0;
@@ -167,14 +170,12 @@ namespace mangh { namespace hydrogenium
          *
          * @returns The total probability for the whole mesh.
          */
-        real_t compute_total_probability()
+        real_t compute_total_probability() const
         {
             const auto w_theta = clenshaw_curtis_weights(polar.size() - 1);
 
-            real_t total_probability{};
-
-            // Variable to store the error (Kahan summation algorithm)
-            real_t error = 0.0;
+            // Kahan summation keeps the rounding error of the many small terms in check
+            KahanSum<real_t> total;
 
             for (std::size_t r = 1; r < radial.size(); ++r)
             {
@@ -186,12 +187,12 @@ namespace mangh { namespace hydrogenium
 
                     for (std::size_t phi = 0; phi + 1 < azimuthal.size(); ++phi)
                     {
-                        KahanSummation(total_probability, w_rt * std::norm(psi[r][theta][phi]), error)
+                        total += w_rt * std::norm(psi(r, theta, phi));
                     }
                 }
             }
 
-            return total_probability;
+            return total.value();
         }
 
         /**
@@ -202,6 +203,8 @@ namespace mangh { namespace hydrogenium
          * - `qn.npy`  - quantum numbers [n, l, m].
          *
          * @param dir - output directory (must exist).
+         *
+         * @exception std::runtime_error - when a file cannot be written.
          */
         void save(const std::filesystem::path& dir) const
         {
@@ -209,13 +212,7 @@ namespace mangh { namespace hydrogenium
             npy::save(dir / "theta.npy", polar.data(), { polar.size() });
             npy::save(dir / "phi.npy", azimuthal.data(), { azimuthal.size() });
 
-            npy::save<complex_t>(dir / "psi.npy", { radial.size(), polar.size(), azimuthal.size() },
-                [&](std::ostream& os)
-                {
-                    for (std::size_t r = 0; r < radial.size(); ++r)
-                        for (std::size_t theta = 0; theta < polar.size(); ++theta)
-                            npy::write_data(os, psi[r][theta].data(), azimuthal.size());
-                });
+            npy::save(dir / "psi.npy", psi.data(), { psi.pages(), psi.rows(), psi.columns() });
 
             const std::int32_t qn[] = { static_cast<std::int32_t>(qs.n), static_cast<std::int32_t>(qs.l), qs.m };
             npy::save(dir / "qn.npy", qn, { 3 });
@@ -223,4 +220,4 @@ namespace mangh { namespace hydrogenium
     };
 }}
 
-#endif /* !MANGH_HYDROGEN_SOLUTION_DATA_HPP */
+#endif /* !MANGH_HYDROGENIUM_MESH_HPP */

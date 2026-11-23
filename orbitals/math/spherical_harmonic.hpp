@@ -34,7 +34,7 @@ namespace mangh { namespace math
     template<typename T>
     std::complex<T> spherical_harmonic(unsigned l, int m, T theta, T phi)
     {
-        unsigned M = m < 0 ? -m : m;
+        const auto M = static_cast<unsigned>(m < 0 ? -m : m);
         std::complex<T> phase{ std::cos(M * phi), std::sin(M * phi) };
         return
             ylm_assoc_legendre(l, M, std::cos(theta)) *
@@ -57,11 +57,12 @@ namespace mangh { namespace math
     template <typename T>
     T spherical_real_basis(unsigned l, int m, T theta, T phi)
     {
-        unsigned M = m < 0 ? -m : m;
-        auto ylm = ylm_assoc_legendre(l, M, std::cos(theta));
-        return 
-            (m < 0) ? std::sqrt(2.) * (m % 2 ? -ylm : ylm) * std::sin(M * phi) :
-                (m > 0) ? std::sqrt(2.) * (m % 2 ? -ylm : ylm) * std::cos(M * phi) :
+        const auto M = static_cast<unsigned>(m < 0 ? -m : m);
+        const T ylm = ylm_assoc_legendre(l, M, std::cos(theta));
+        const T sqrt2 = std::sqrt(T{2});
+        return
+            (m < 0) ? sqrt2 * (m % 2 ? -ylm : ylm) * std::sin(M * phi) :
+                (m > 0) ? sqrt2 * (m % 2 ? -ylm : ylm) * std::cos(M * phi) :
                     ylm;
     }
 }}

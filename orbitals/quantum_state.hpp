@@ -4,7 +4,6 @@
 #include <cmath>
 #include <stdexcept>
 
-// #include "math/assoc_legendre.hpp"
 #include "math/assoc_laguerre.hpp"
 #include "math/factorial.hpp"
 #include "math/spherical_harmonic.hpp"
@@ -43,6 +42,15 @@ namespace mangh { namespace hydrogenium
 
         ///////////////////////////////////////////////////////////////////
         ///
+        ///     Limits
+        ///
+
+        /// @brief The largest principal quantum number supported
+        /// (RadialExtent() was verified up to this n, see its remarks).
+        static constexpr int max_n = 20;
+
+        ///////////////////////////////////////////////////////////////////
+        ///
         ///     Constructor(s)
         ///
 
@@ -62,15 +70,15 @@ namespace mangh { namespace hydrogenium
          * 
          */
         QuantumState(int n, int l, int m)
-            : n(n > 0 ? n : throw std::invalid_argument(badQuantumNumbers))
-            , l(0 <= l && l < n ? l : throw std::invalid_argument(badQuantumNumbers))
+            : n(n > 0 ? static_cast<unsigned>(n) : throw std::invalid_argument(badQuantumNumbers))
+            , l(0 <= l && l < n ? static_cast<unsigned>(l) : throw std::invalid_argument(badQuantumNumbers))
             , m(-l <= m && m <= l ? m : throw std::invalid_argument(badQuantumNumbers))
             // auxiliary variables
             , ra0(1.0)
             , nra0(ra0 * n)
             , radial_factor(
                 std::sqrt(
-                    std::pow(2.0 / nra0, 3) * factorial<real_t>(n - l - 1) / 2.0 / n / factorial<real_t>(n + l)
+                    std::pow(2.0 / nra0, 3) * factorial<real_t>(static_cast<unsigned>(n - l - 1)) / 2.0 / n / factorial<real_t>(static_cast<unsigned>(n + l))
                 )
             )
         {
@@ -106,12 +114,13 @@ namespace mangh { namespace hydrogenium
         }
 
         /**
-         * @brief Radial extent of the orbital: the radius enclosing all but < 5e-6 of the probability for any l (0 <= l < n, n <= 20).
+         * @brief Radial extent of the orbital: the radius enclosing all but < 5e-6 of the probability for any l (0 <= l < n, n <= max_n).
          *
          * - `R_max = ra0 · n · (2n + 12)`
          *
-         * @remarks The 5e-6 bound was verified numerically for n = 1..20
-         * (the tail outside `R_max` slowly grows with n, so re-check it before allowing larger n).
+         * @remarks The 5e-6 bound was verified numerically for n = 1..max_n
+         * (the tail outside `R_max` slowly grows with n, so re-check it before raising max_n;
+         * the test `normalization` in tests/test_orbitals.cpp does that).
          *
          * - `2n²` is the outermost classical turning point (for l = 0),
          * - `12n` is a margin proportional to the length of the probability density decay (which scales with n).
@@ -123,10 +132,6 @@ namespace mangh { namespace hydrogenium
         {
             return nra0 * (2.0 * n + 12.0);
         }
-
-        // real_t YlmAssocLegPol(real_t x) const { return ylm_assoc_legendre(l, m, x); }
-
-        // real_t AssocLegPol(real_t x) const { return assoc_legendre(l, m, x); }
 
         /**
          * @brief Angular part of the wave function (aka spherical harmonics `Yl,m(θ,ϕ)`).

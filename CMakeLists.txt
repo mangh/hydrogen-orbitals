@@ -28,13 +28,14 @@ endif()
 project(
     HYDROGEN_ORBITALS
   VERSION "${APP_VERSION}"
-  LANGUAGES C CXX
+  LANGUAGES CXX
   DESCRIPTION "Visualization of the hydrogen atom orbitals using the analytical solution of the time independent Schrodinger equation for the hydrogen atom"
 )
 
 
-# C++ language standard to compile for
+# C++ language standard to compile for (required: no silent fallback to an older standard)
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # To avoid portability issues, language extensions (enabled by default)
 # are disabled before any target is created. This allows to stick to the
@@ -42,18 +43,10 @@ set(CMAKE_CXX_STANDARD 20)
 # is c++20 with GNU extensions):
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Apps & libraries versioning:
-set(APP_VER "${APP_VERSION_MAJOR}${APP_VERSION_MINOR}")
-set(APP_VER_CFG "${APP_VER}$<$<CONFIG:Debug>:d>")
-
 ##########################################################################
 #
 #   OPTIONS
 #
-
-#########
-# GNU standard directories for installation
-include(GNUInstallDirs)
 
 #########
 # Check whether the compiler supports IPO/LTO (interprocedural optimization):
@@ -62,7 +55,7 @@ if(check_ipo_module_found)
   check_ipo_supported(
     RESULT LTO_OPTIMIZATION_SUPPORTED
     OUTPUT LTO_OPTIMIZATION_ERROR
-    LANGUAGES C CXX
+    LANGUAGES CXX
   )
 else()
   set(LTO_OPTIMIZATION_SUPPORTED NO)
@@ -97,13 +90,6 @@ endif()
 #
 
 # enable_testing()
-
-##########################################################################
-#
-#   SOURCE PATHS
-#
-
-cmake_path(SET ROOT_DIR "${PROJECT_SOURCE_DIR}")
 
 ##########################################################################
 #

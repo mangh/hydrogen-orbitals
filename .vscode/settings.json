@@ -5,11 +5,6 @@
     ],
     "cmake.configureOnOpen": false,
     "cmake.generator": "Ninja",
-    "cmake.configureSettings": {
-        "CMAKE_PREFIX_PATH": [
-            "c:/Users/marek/lib/CLI11"
-        ],
-    },
     "cmake.configureArgs": [
         "--log-level=DEBUG"
     ],

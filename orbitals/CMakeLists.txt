@@ -8,13 +8,6 @@ set(_source_files
   main.cpp
 )
 
-# # Set explicit dependency of source files on METROLOGY headers
-# # (for simplicity, it is assumed here that all source files depend on those headers):
-# set_property(
-#   SOURCE ${_source_files}
-#   PROPERTY OBJECT_DEPENDS "${METROLOGY_CHANGE_TIP}"
-# )
-
 # Add executable target to the project using the specified source files:
 add_executable(
   ${target}
@@ -26,8 +19,10 @@ add_executable(
 #   COMPILE DEFINITIONS & OPTIONS
 #
 
-# Warning options set differently for MSVC-like compiler (/W3) and all others (-Wall -Wextra):
-target_compile_options(${target} PRIVATE $<IF:$<STREQUAL:${CMAKE_CXX_COMPILER_FRONTEND_VARIANT},MSVC>,/W3,-Wall -Wextra>)
+# Warning options set differently for MSVC-like compilers (/W4) and all others (-Wall -Wextra ...):
+target_compile_options(${target} PRIVATE
+  "$<IF:$<STREQUAL:${CMAKE_CXX_COMPILER_FRONTEND_VARIANT},MSVC>,/W4,-Wall;-Wextra;-Wpedantic;-Wshadow;-Wconversion>"
+)
 
 ##########################################################################
 #
@@ -57,17 +52,6 @@ else()
   message(WARNING "IPO/LTO is not supported: ${LTO_OPTIMIZATION_ERROR}")
 endif()
 
-# # target_link_libraries() command below imports the so called Usage Requirements of
-# # the METROLOGY_LIBRARY, which include (among other things) its include directories
-# # (so there is no need to use the target_include_directories() command):
-# target_link_libraries(${target}
-#   PRIVATE METROLOGY_LIBRARY
-# )
-
 set_target_properties(${target} PROPERTIES
   LINK_WHAT_YOU_USE ON
 )
-
-# set_target_properties(${target} PROPERTIES
-#   OUTPUT_NAME "${target}${APP_VER_CFG}"
-# )

@@ -1,5 +1,6 @@
 .vs/
 build/
+build-debug/
 doc/
 out/
 
@@ -8,3 +9,6 @@ results/
 
 # Python bytecode (visualize3d.py imports visualize2d.py)
 __pycache__/
+
+# Machine-specific CMake presets (local compiler and library paths), see CMakePresets.json
+CMakeUserPresets.json

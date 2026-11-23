@@ -8,6 +8,7 @@
 #include <filesystem>
 #include <fstream>
 #include <initializer_list>
+#include <ostream>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
@@ -54,39 +55,27 @@ namespace mangh { namespace npy
         os.write(header.data(), static_cast<std::streamsize>(header.size()));
     }
 
-    /// @brief Writes a contiguous block of elements (raw bytes).
-    template<typename T>
-    void write_data(std::ostream& os, const T* data, std::size_t count)
-    {
-        os.write(reinterpret_cast<const char*>(data), static_cast<std::streamsize>(count * sizeof(T)));
-    }
-
     /**
-     * @brief Writes a .npy file with the given shape, filling it with data from @p write_body.
+     * @brief Writes a contiguous array (in C order) as a .npy file.
      *
-     * @param file       - output file path,
-     * @param shape      - array shape,
-     * @param write_body - callable invoked as write_body(std::ostream&); it must write all elements in C order.
- *
- * @exception std::runtime_error - when the file cannot be opened or written.
+     * @param file  - output file path,
+     * @param data  - pointer to the first element,
+     * @param shape - array shape (the product of the dimensions is the number of elements).
+     *
+     * @exception std::runtime_error - when the file cannot be opened or written.
      */
-    template<typename T, typename WriteBody>
-    void save(const std::filesystem::path& file, std::initializer_list<std::size_t> shape, WriteBody&& write_body)
-    {
-        std::ofstream os(file, std::ios::binary);
-        write_header<T>(os, shape);
-        write_body(os);
-        os.close();
-        if (!os) std::cerr << "Failed to write " << file << "\n";
-    }
-
-    /// @brief Writes a contiguous array as a .npy file.
     template<typename T>
     void save(const std::filesystem::path& file, const T* data, std::initializer_list<std::size_t> shape)
     {
         std::size_t count = 1;
         for (std::size_t d : shape) count *= d;
-        save<T>(file, shape, [&](std::ostream& os) { write_data(os, data, count); });
+
+        std::ofstream os(file, std::ios::binary);
+        if (!os) throw std::runtime_error("Cannot open " + file.string() + " for writing");
+        write_header<T>(os, shape);
+        os.write(reinterpret_cast<const char*>(data), static_cast<std::streamsize>(count * sizeof(T)));
+        os.close();
+        if (!os) throw std::runtime_error("Failed to write " + file.string());
     }
 }}
 

@@ -5,26 +5,19 @@
 #include <cstddef>
 #include <vector>
 
-#include "cppfeatures.hpp"
-
 namespace mangh { namespace math
 {
     /**
-     * @brief 3-dimensional array.
-     * 
+     * @brief 3-dimensional array stored contiguously in C (row-major) order.
+     *
+     * The element (p, r, c) is at the offset `(p · rows + r) · columns + c`,
+     * so the whole array can be written at once (e.g. to a .npy file, see npy::save).
+     *
      */
     template<typename T>
-    struct array3d
+    class array3d
     {
-        ///////////////////////////////////////////////////////////////////
-        ///
-        ///     Properties
-        ///
-
-        /// @brief Data pages(each page consists of rows, and each row consists of columns).
-        std::vector<
-            std::vector<
-                std::vector<T>>> m_page;
+    public:
 
         ///////////////////////////////////////////////////////////////////
         ///
@@ -37,24 +30,19 @@ namespace mangh { namespace math
         array3d() = delete;
 
         /**
-         * @brief array3d constructor.
-         * 
-         * @param pages  - the number of pages,
+         * @brief array3d constructor (all elements value-initialized).
+         *
+         * @param pages   - the number of pages,
          * @param rows    - the number of rows (in a single page),
          * @param columns - the number of columns (in a single row).
-         * 
+         *
          */
         array3d(std::size_t pages, std::size_t rows, std::size_t columns)
-            : m_page(pages)
+            : m_pages(pages)
+            , m_rows(rows)
+            , m_columns(columns)
+            , m_data(pages * rows * columns)
         {
-            for(std::size_t p = 0; p < pages; ++p)
-            {
-                m_page[p] = std::vector<std::vector<T>>(rows);
-                for(std::size_t r = 0; r < rows; ++r)
-                {
-                    m_page[p][r] = std::vector<T>(columns);
-                }
-            }
         }
 
         ///////////////////////////////////////////////////////////////////
@@ -63,55 +51,61 @@ namespace mangh { namespace math
         ///
 
         /**
-         * @brief Array subscript operator (for reading).
-         * 
-         * @param p - page index. 
-         * @returns Data page (read-only) for the p-index.
-         */
-        CONSTEXPR_SINCE_CXX20 const std::vector<std::vector<T>>& operator[](std::size_t p) const
-        {
-            assert(p < m_page.size());
-            return m_page[p];
-        }
-        /**
-         * @brief Array subscript operator (for writing).
-         * 
-         * @param p - page index. 
-         * @returns Data page (for writing) for the p-index.
-         */
-        CONSTEXPR_SINCE_CXX20 std::vector<std::vector<T>>& operator[](std::size_t p)
-        {
-            assert(p < m_page.size());
-            return m_page[p];
-        }
-
-        /**
-         * @brief Function-call operator to acces single data item (for reading).
-         * 
+         * @brief Function-call operator to access a single data item (for reading).
+         *
          * @param p - page index,
          * @param r - row index,
          * @param c - column index.
          * @returns Single data item (read-only) for the given indexes (p, r, c).
          */
-        CONSTEXPR_SINCE_CXX20 const T& operator()(std::size_t p, std::size_t r, std::size_t c) const
+        constexpr const T& operator()(std::size_t p, std::size_t r, std::size_t c) const
         {
-            assert(p < m_page.size() && r < m_page[p].size() && c < m_page[p][r].size());
-            return m_page[p][r][c];
+            return m_data[offset(p, r, c)];
         }
 
         /**
-         * @brief Function-call operator to acces single data item (for writing).
-         * 
+         * @brief Function-call operator to access a single data item (for writing).
+         *
          * @param p - page index,
          * @param r - row index,
          * @param c - column index.
          * @returns Single data item (writable) for the given indexes (p, r, c).
          */
-        CONSTEXPR_SINCE_CXX20 T& operator()(std::size_t p, std::size_t r, std::size_t c)
+        constexpr T& operator()(std::size_t p, std::size_t r, std::size_t c)
         {
-            assert(p < m_page.size() && r < m_page[p].size() && c < m_page[p][r].size());
-            return m_page[p][r][c];
+            return m_data[offset(p, r, c)];
         }
+
+        ///////////////////////////////////////////////////////////////////
+        ///
+        ///     Methods
+        ///
+
+        constexpr std::size_t pages() const noexcept { return m_pages; }
+        constexpr std::size_t rows() const noexcept { return m_rows; }
+        constexpr std::size_t columns() const noexcept { return m_columns; }
+
+        /// @brief The total number of elements (pages · rows · columns).
+        constexpr std::size_t size() const noexcept { return m_data.size(); }
+
+        /// @brief Pointer to the first element (the elements are contiguous, in C order).
+        constexpr const T* data() const noexcept { return m_data.data(); }
+        constexpr T* data() noexcept { return m_data.data(); }
+
+    private:
+
+        constexpr std::size_t offset(std::size_t p, std::size_t r, std::size_t c) const
+        {
+            assert(p < m_pages && r < m_rows && c < m_columns);
+            return (p * m_rows + r) * m_columns + c;
+        }
+
+        std::size_t m_pages;
+        std::size_t m_rows;
+        std::size_t m_columns;
+
+        /// @brief Data pages (each page consists of rows, and each row consists of columns), one after another.
+        std::vector<T> m_data;
     };
 }}
 
