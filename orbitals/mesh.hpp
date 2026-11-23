@@ -56,8 +56,8 @@ namespace mangh { namespace hydrogenium
 
         const QuantumState qs;
 
-        /// @brief Total probability (or normalizing factor) for the entire area covered by the coordinates (r, θ, φ).
-        real_t normalizing_factor;
+        /// @brief Total probability ∫|Ψ|² dV over the volume covered by the coordinates (r, θ, φ).
+        real_t total_probability;
 
         ///////////////////////////////////////////////////////////////////
         ///
@@ -90,7 +90,7 @@ namespace mangh { namespace hydrogenium
             // The following calculation isn't necessary
             // when we use a normalized function Ψ (for which the total probability ≈ 1).
             // We do it just to check if that's really the case:
-            normalizing_factor = compute_total_probability();
+            total_probability = compute_total_probability();
         }
 
         ///////////////////////////////////////////////////////////////////
@@ -125,7 +125,7 @@ namespace mangh { namespace hydrogenium
          * @remarks The rule interpolates f(x) at the nodes x_j = cos(jπ/N) by a polynomial of degree N
          * (equivalently, a cosine series in θ) and integrates that polynomial exactly. Hence the result is exact
          * whenever f is a polynomial in cosθ of degree <= N. |Yl,m(θ,ϕ)|² is such a polynomial of degree 2l,
-         * so the polar integral is exact for every l <= N/2 (l <= 9 for the 20-point polar grid).
+         * so the polar integral is exact for every l <= N/2 (l <= 10 for the default 21-node polar grid).
          *
          * Weights (Trefethen, "Is Gauss quadrature better than Clenshaw–Curtis?", SIAM Review 50 (2008)):
          *

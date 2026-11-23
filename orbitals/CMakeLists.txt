@@ -50,8 +50,7 @@ target_link_libraries(${target} PRIVATE
   CLI11::CLI11
 )
 
-# IPO/LTO optimization makes the application just as efficient
-# whether it uses units of measure or simple numbers.
+# IPO/LTO (interprocedural optimization), if the compiler supports it:
 if(LTO_OPTIMIZATION_SUPPORTED)
   set_property(TARGET ${target} PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
 else()

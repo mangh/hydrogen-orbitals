@@ -28,6 +28,7 @@
 using namespace mangh::hydrogenium;
 
 int main(int argc, char** argv)
+try
 {
     // get the program arguments
     CLI::App app{"Hydrogen Orbitals"};
@@ -120,15 +121,19 @@ int main(int argc, char** argv)
     mesh.save(outputDir);
     std::cout << "Mesh saved to " << std::filesystem::absolute(outputDir).string() << std::endl;
 
-    /* Print the normalization factor */
-    constexpr auto max_precision{std::numeric_limits<real_t>::digits10 + 1};     
+    /* Print the total probability (≈ 1 for the normalized Ψ; the deficit is the quadrature error plus the tail beyond the grid) */
+    constexpr auto max_precision{std::numeric_limits<real_t>::digits10 + 1};
     std::cout
-        << std::scientific
         << std::setprecision(max_precision)
-        << std::fixed
-        << "Normalization factor, i.e., the total probability for the entire volume defined by the grid: "
-        << std::sqrt(mesh.normalizing_factor)
+        << "Total probability over the grid: P = " << mesh.total_probability
+        << std::setprecision(3) << std::scientific
+        << "  (1 - P = " << 1.0 - mesh.total_probability << ")"
         << std::endl;
 
     return EXIT_SUCCESS;
+}
+catch (const std::exception& e)
+{
+    std::cerr << "Error: " << e.what() << std::endl;
+    return EXIT_FAILURE;
 }

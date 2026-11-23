@@ -17,7 +17,7 @@ namespace mangh { namespace math
      * 
      * @returns The value of the polynomial `Lα,n(x)` at `x`.
      *
-     * @remarks See: Numerical Recipes in C++, 4.6.1, algorithm "gauleg",
+     * @remarks See: Numerical Recipes in C++, 4.6.1, algorithm "gaulag" (Gauss-Laguerre quadrature),
      * and the recursive definition at https://en.wikipedia.org/wiki/Laguerre_polynomials:
      * 
      * Lα,0(x) = 1,
@@ -30,7 +30,7 @@ namespace mangh { namespace math
     {
         static_assert(
             std::is_floating_point<T>::value,
-            "T assoc_laguerre(unsigned n, unsigned alpha, T x): template requires a floating-point type parameter T."
+            "T assoc_laguerre(unsigned alpha, unsigned n, T x): template requires a floating-point type parameter T."
         );
 
         T L2 = 0.0;

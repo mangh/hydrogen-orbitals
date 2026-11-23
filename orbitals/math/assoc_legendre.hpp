@@ -132,7 +132,7 @@ namespace mangh { namespace math
      }
  
      /**
-      * @brief Associated Legendre polynomial `Pl,m(x)` (orthonormal).
+      * @brief Associated Legendre polynomial `Pl,m(x)` (unnormalized, with the Condon-Shortley phase `(-1)^m`).
       * 
       * @tparam T - floating point type of argument and return value.
       * 

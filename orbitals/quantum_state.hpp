@@ -84,9 +84,11 @@ namespace mangh { namespace hydrogenium
         /**
          * @brief The normalized radial part `Rn,l(r)` of the wave function `Ψ`.
          *
-         * - `Rn,l(r) = e^(-ρ/n) · (2ρ/n)^l · L_n-l-1_2l+1(2ρ/n)`,
+         * - `Rn,l(r) = N · e^(-ρ) · (2ρ)^l · L_n-l-1_2l+1(2ρ)`,
          *
-         * - `ρ = r / nra0` - normalized radial distance from the nucleus.
+         * - `ρ = r / nra0 = r / (n·a0)` - scaled radial distance from the nucleus,
+         *
+         * - `N = √[ (2/(n·a0))³ · (n-l-1)! / (2n·(n+l)!) ]` - normalizing factor.
          *
          * @param r - radial distance from the nucleus.
          *

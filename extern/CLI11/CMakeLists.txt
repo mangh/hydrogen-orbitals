@@ -12,8 +12,8 @@ include(FetchContent)
 FetchContent_Declare(
   cli11_project
   GIT_REPOSITORY https://github.com/CLIUtils/CLI11.git
+  # A commit hash pins the dependency exactly (GIT_SHALLOW cannot be used with a hash, only with a branch or tag)
   GIT_TAG        cbd58a3696887b34c70949aef21a71735a0c2ad5 # v2.7.2, Aug 2, 2026
-  GIT_SHALLOW    TRUE
   FIND_PACKAGE_ARGS 2.7 NAMES CLI11 CONFIG GLOBAL
 )
 

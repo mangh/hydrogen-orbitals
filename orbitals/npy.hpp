@@ -8,7 +8,7 @@
 #include <filesystem>
 #include <fstream>
 #include <initializer_list>
-#include <iostream>
+#include <stdexcept>
 #include <string>
 #include <type_traits>
 
@@ -67,6 +67,8 @@ namespace mangh { namespace npy
      * @param file       - output file path,
      * @param shape      - array shape,
      * @param write_body - callable invoked as write_body(std::ostream&); it must write all elements in C order.
+ *
+ * @exception std::runtime_error - when the file cannot be opened or written.
      */
     template<typename T, typename WriteBody>
     void save(const std::filesystem::path& file, std::initializer_list<std::size_t> shape, WriteBody&& write_body)

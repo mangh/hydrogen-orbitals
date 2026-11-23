@@ -59,10 +59,14 @@ def main():
     else:
         theta0 = np.radians(args.angle if args.angle is not None else 90.0)
         j = int(np.argmin(np.abs(theta - theta0)))
+        if np.sin(theta[j]) < 1e-9:
+            parser.error(f"--angle {args.angle}: the cone theta = {np.degrees(theta[j]):.0f} deg degenerates to the Z axis")  # ASCII: the console may not print Greek letters
         F = f[:, j, :]
-        R, P = np.meshgrid(r, phi, indexing="ij")
+        # For θ ≠ 90° the nodes lie on a cone; it is drawn as its projection onto the XY-plane (radius r·sinθ).
+        R, P = np.meshgrid(r * np.sin(theta[j]), phi, indexing="ij")
         X, Y = R * np.cos(P), R * np.sin(P)
-        xlabel, ylabel = "X", "Y"
+        flat = np.isclose(theta[j], np.pi / 2)
+        xlabel, ylabel = ("X", "Y") if flat else ("X (projection of the cone)", "Y (projection of the cone)")
         where = f"θ = {np.degrees(theta[j]):.0f}°"
 
     vmax = np.abs(F).max() or 1.0
