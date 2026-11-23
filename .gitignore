@@ -6,5 +6,5 @@ out/
 # Output of the orbitals.exe application (see the --output option)
 results/
 
-# Python bytecode (visualize3d.py imports visualize_data.py)
+# Python bytecode (visualize3d.py imports visualize2d.py)
 __pycache__/

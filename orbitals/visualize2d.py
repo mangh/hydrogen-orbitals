@@ -4,9 +4,9 @@ The data directory holds the mesh coordinates r, theta, phi and the complex wave
 psi[r, theta, phi] as NumPy arrays; any plane and quantity can be cut out of it here.
 
 Examples:
-    python visualize_data.py results/n4_l3_m1
-    python visualize_data.py results/n4_l3_m1 --quantity real --plane xy
-    python visualize_data.py results/n4_l3_m1 --plane xz --angle 45
+    python visualize2d.py results/n4_l3_m1
+    python visualize2d.py results/n4_l3_m1 --quantity real --plane xy
+    python visualize2d.py results/n4_l3_m1 --plane xz --angle 45
 """
 
 import argparse

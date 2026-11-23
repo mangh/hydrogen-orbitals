@@ -17,10 +17,10 @@
             "cwd": "${workspaceFolder}"
         },
         {
-            "name": "Visualize",
+            "name": "Visualize 2D",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/orbitals/visualize_data.py",
+            "program": "${workspaceFolder}/orbitals/visualize2d.py",
             "console": "integratedTerminal",
             "args": ["results/n4_l3_m1"],
             "cwd": "${workspaceFolder}"

@@ -21,7 +21,7 @@ from pathlib import Path
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
 
-from visualize_data import QUANTITIES
+from visualize2d import QUANTITIES
 
 try:
     import plotly.graph_objects as go
