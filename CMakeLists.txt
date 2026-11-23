@@ -86,10 +86,13 @@ endif()
 #   Use the following command (in the project's root directory) to
 #   run all tests defined in the project:
 #
-#       ctest --test-dir ./build/ [-V[V]] 
+#       ctest --test-dir ./build/ [-V[V]]
 #
 
-# enable_testing()
+option(BUILD_TESTING "Build the tests" ON)
+if(BUILD_TESTING)
+  enable_testing()
+endif()
 
 ##########################################################################
 #
@@ -101,3 +104,8 @@ add_subdirectory ("extern/CLI11")
 
 # hydrogen orbitals app
 add_subdirectory ("orbitals")
+
+# tests
+if(BUILD_TESTING)
+  add_subdirectory ("tests")
+endif()

@@ -5,7 +5,6 @@
  *      Author: d-w-h
  */
 
-#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <cstdlib>
@@ -19,8 +18,6 @@
 
 #include "quantum_state.hpp"
 #include "mesh.hpp"
-#include "math/constants.hpp"
-#include "linspace.hpp"
 #include "numbers.hpp"
 
 using namespace mangh::hydrogenium;
@@ -76,38 +73,14 @@ try
                   + "_l" + std::to_string(angularQuantumNumber)
                   + "_m" + std::to_string(magneticQuantumNumber);
 
-    constexpr real_t PI = PI_V<real_t>;
-
-    QuantumState qs
+    const QuantumState qs
     {
         principalQuantumNumber,  // n - principal quantum number
         angularQuantumNumber,    // l - azimuthal number
         magneticQuantumNumber,   // m - magnetic quantum number
     };
 
-    // Radial range scales with n (see QuantumState::RadialExtent), with a fixed step
-    constexpr real_t radialStep = 0.2;
-    const real_t radialMax = qs.RadialExtent();
-    const auto radialPoints = static_cast<std::size_t>(std::lround(radialMax / radialStep)) + 1;
-
-    // Polar grid θ ∈ [0, π]:
-    // - an odd number of points, so that a node lies exactly at θ = π/2 (XY-plane plots),
-    // - N = polarPoints - 1 >= 2l intervals: the θ integral (Clenshaw–Curtis, see Mesh::compute_total_probability) is then exact for |Yl,m|².
-    const std::size_t polarPoints = std::max<std::size_t>(21, 2 * qs.l + 1);
-
-    // Azimuthal grid ϕ ∈ [0, 2π] (the last node duplicates the first):
-    // - an even number of intervals, so that for every node ϕ there is also a node at ϕ + π (the opposite half-plane in the XZ-plane plots),
-    // - >= 4|m| intervals: at least 4 samples per period of cos(mϕ) in the XY-plane plots
-    //   (and > 2|m|, which also keeps the ϕ integral exact for real orbitals, where |Ψ|² contains cos²(mϕ)).
-    const std::size_t azimuthalPoints = std::max<std::size_t>(40, static_cast<std::size_t>(4 * std::abs(qs.m))) + 1;
-
-    Mesh mesh
-    {
-        linspace<real_t>{ 0.0, radialMax, radialPoints },       //  radial coordinates (r)
-        linspace<real_t>{ 0.0, PI, polarPoints },               //  polar coordinates (θ)
-        linspace<real_t>{ 0.0, 2.0 * PI, azimuthalPoints },  //  azimuthal coordinates (ϕ)
-        qs
-    };
+    const Mesh mesh = Mesh::for_state(qs);
 
     /* Save the mesh (coordinates and Ψ) for visualization */
     std::filesystem::create_directories(outputDir);

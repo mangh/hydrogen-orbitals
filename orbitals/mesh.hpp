@@ -1,10 +1,12 @@
 #ifndef MANGH_HYDROGENIUM_MESH_HPP
 #define MANGH_HYDROGENIUM_MESH_HPP
 
+#include <algorithm>
 #include <cmath>
 #include <complex>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <filesystem>
 #include <vector>
 
@@ -84,6 +86,40 @@ namespace mangh { namespace hydrogenium
             // when we use a normalized function Ψ (for which the total probability ≈ 1).
             // We do it just to check if that's really the case:
             total_probability = compute_total_probability();
+        }
+
+        /**
+         * @brief The mesh used by the application for the quantum state @p qs.
+         *
+         * - r ∈ [0, RadialExtent()], with a fixed step of 0.2 (the range scales with n, see QuantumState::RadialExtent),
+         *
+         * - θ ∈ [0, π]: an odd number of nodes, so that a node lies exactly at θ = π/2 (XY-plane plots),
+         *   and N = nodes - 1 >= 2l intervals, so that the θ integral (Clenshaw–Curtis, see compute_total_probability) is exact for |Yl,m|²,
+         *
+         * - ϕ ∈ [0, 2π] (the last node duplicates the first): an even number of intervals, so that for every node ϕ
+         *   there is also a node at ϕ + π (the opposite half-plane in the XZ-plane plots), and >= 4|m| intervals:
+         *   at least 4 samples per period of cos(mϕ) in the XY-plane plots (and > 2|m|, which also keeps the ϕ integral
+         *   exact for real orbitals, where |Ψ|² contains cos²(mϕ)).
+         */
+        static Mesh for_state(const QuantumState& qs)
+        {
+            static constexpr real_t PI = mangh::math::PI_V<real_t>;
+
+            constexpr real_t radialStep = 0.2;
+            const real_t radialMax = qs.RadialExtent();
+            const auto radialPoints = static_cast<std::size_t>(std::lround(radialMax / radialStep)) + 1;
+
+            const std::size_t polarPoints = std::max<std::size_t>(21, 2 * qs.l + 1);
+
+            const std::size_t azimuthalPoints = std::max<std::size_t>(40, static_cast<std::size_t>(4 * std::abs(qs.m))) + 1;
+
+            return Mesh
+            {
+                linspace<real_t>{ 0.0, radialMax, radialPoints },     //  radial coordinates (r)
+                linspace<real_t>{ 0.0, PI, polarPoints },             //  polar coordinates (θ)
+                linspace<real_t>{ 0.0, 2.0 * PI, azimuthalPoints },   //  azimuthal coordinates (ϕ)
+                qs
+            };
         }
 
         ///////////////////////////////////////////////////////////////////

@@ -1,0 +1,9 @@
+# Python packages for the visualizers (orbitals/visualize2d.py, orbitals/visualize3d.py)
+# and the SciPy cross-check test (tests/check_against_scipy.py):
+#
+#   pip install -r requirements.txt
+#
+numpy>=1.24
+matplotlib>=3.7
+scipy>=1.10    # RegularGridInterpolator(method="cubic")
+plotly>=5.0

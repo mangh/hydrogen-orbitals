@@ -8,20 +8,28 @@ set(_source_files
   main.cpp
 )
 
-# Add executable target to the project using the specified source files:
-add_executable(
-  ${target}
-  ${_source_files}
+##########################################################################
+#
+#   HEADER-ONLY CODE (shared by the application and the tests)
+#
+
+add_library(orbitals_headers INTERFACE)
+target_include_directories(orbitals_headers INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}")
+
+# Warning options set differently for MSVC-like compilers (/W4) and all others (-Wall -Wextra ...):
+target_compile_options(orbitals_headers INTERFACE
+  "$<IF:$<STREQUAL:${CMAKE_CXX_COMPILER_FRONTEND_VARIANT},MSVC>,/W4,-Wall;-Wextra;-Wpedantic;-Wshadow;-Wconversion>"
 )
 
 ##########################################################################
 #
-#   COMPILE DEFINITIONS & OPTIONS
+#   APPLICATION
 #
 
-# Warning options set differently for MSVC-like compilers (/W4) and all others (-Wall -Wextra ...):
-target_compile_options(${target} PRIVATE
-  "$<IF:$<STREQUAL:${CMAKE_CXX_COMPILER_FRONTEND_VARIANT},MSVC>,/W4,-Wall;-Wextra;-Wpedantic;-Wshadow;-Wconversion>"
+# Add executable target to the project using the specified source files:
+add_executable(
+  ${target}
+  ${_source_files}
 )
 
 ##########################################################################
@@ -42,6 +50,7 @@ endif()
 #
 
 target_link_libraries(${target} PRIVATE
+  orbitals_headers
   CLI11::CLI11
 )
 

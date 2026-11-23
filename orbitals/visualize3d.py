@@ -6,7 +6,7 @@ and drawn with Plotly in the browser (rotate / zoom with the mouse). Each surfac
 it encloses a given fraction of the integral of |psi|^2 (or of (Re psi)^2, (Im psi)^2 for the real
 and imaginary parts, whose positive and negative lobes are drawn in red and blue).
 
-Requires: pip install plotly
+Requires NumPy, SciPy and Plotly: pip install -r requirements.txt
 
 Examples:
     python visualize3d.py results/n4_l3_m1
@@ -18,16 +18,15 @@ import argparse
 import sys
 from pathlib import Path
 
-import numpy as np
-from scipy.interpolate import RegularGridInterpolator
-
-from visualize2d import QUANTITIES
-
 try:
+    import numpy as np
     import plotly.graph_objects as go
     from plotly.colors import sample_colorscale
-except ImportError:
-    sys.exit("visualize3d.py needs Plotly: pip install plotly")
+    from scipy.interpolate import RegularGridInterpolator
+except ImportError as e:
+    sys.exit(f"visualize3d.py needs {e.name}: pip install -r requirements.txt")
+
+from visualize2d import QUANTITIES
 
 POSITIVE, NEGATIVE = "#d6604d", "#4393c3"  # lobe colors for Re Ψ / Im Ψ (as in RdBu)
 

@@ -120,7 +120,7 @@ namespace mangh { namespace hydrogenium
          *
          * @remarks The 5e-6 bound was verified numerically for n = 1..max_n
          * (the tail outside `R_max` slowly grows with n, so re-check it before raising max_n;
-         * the test `normalization` in tests/test_orbitals.cpp does that).
+         * the test `radial_extent` in tests/test_orbitals.cpp does that).
          *
          * - `2n²` is the outermost classical turning point (for l = 0),
          * - `12n` is a margin proportional to the length of the probability density decay (which scales with n).
