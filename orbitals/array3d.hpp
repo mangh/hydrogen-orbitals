@@ -5,6 +5,8 @@
 #include <cstddef>
 #include <vector>
 
+#include "cppfeatures.hpp"
+
 namespace mangh { namespace math
 {
     /**
@@ -58,7 +60,7 @@ namespace mangh { namespace math
          * @param c - column index.
          * @returns Single data item (read-only) for the given indexes (p, r, c).
          */
-        constexpr const T& operator()(std::size_t p, std::size_t r, std::size_t c) const
+        CONSTEXPR_SINCE_CXX20 const T& operator()(std::size_t p, std::size_t r, std::size_t c) const
         {
             return m_data[offset(p, r, c)];
         }
@@ -71,7 +73,7 @@ namespace mangh { namespace math
          * @param c - column index.
          * @returns Single data item (writable) for the given indexes (p, r, c).
          */
-        constexpr T& operator()(std::size_t p, std::size_t r, std::size_t c)
+        CONSTEXPR_SINCE_CXX20 T& operator()(std::size_t p, std::size_t r, std::size_t c)
         {
             return m_data[offset(p, r, c)];
         }
@@ -80,21 +82,23 @@ namespace mangh { namespace math
         ///
         ///     Methods
         ///
+        ///     (std::vector is usable in constant expressions since C++20, hence CONSTEXPR_SINCE_CXX20)
+        ///
 
         constexpr std::size_t pages() const noexcept { return m_pages; }
         constexpr std::size_t rows() const noexcept { return m_rows; }
         constexpr std::size_t columns() const noexcept { return m_columns; }
 
         /// @brief The total number of elements (pages · rows · columns).
-        constexpr std::size_t size() const noexcept { return m_data.size(); }
+        CONSTEXPR_SINCE_CXX20 std::size_t size() const noexcept { return m_data.size(); }
 
         /// @brief Pointer to the first element (the elements are contiguous, in C order).
-        constexpr const T* data() const noexcept { return m_data.data(); }
-        constexpr T* data() noexcept { return m_data.data(); }
+        CONSTEXPR_SINCE_CXX20 const T* data() const noexcept { return m_data.data(); }
+        CONSTEXPR_SINCE_CXX20 T* data() noexcept { return m_data.data(); }
 
     private:
 
-        constexpr std::size_t offset(std::size_t p, std::size_t r, std::size_t c) const
+        CONSTEXPR_SINCE_CXX20 std::size_t offset(std::size_t p, std::size_t r, std::size_t c) const
         {
             assert(p < m_pages && r < m_rows && c < m_columns);
             return (p * m_rows + r) * m_columns + c;

@@ -1,7 +1,6 @@
 #ifndef MANGH_NPY_HPP
 #define MANGH_NPY_HPP
 
-#include <bit>
 #include <complex>
 #include <cstddef>
 #include <cstdint>
@@ -13,9 +12,22 @@
 #include <string>
 #include <type_traits>
 
+#include "cppfeatures.hpp"
+
+// The .npy files are written as little-endian ('<' in descr), straight from memory:
+// the platform must be little-endian (checked at compile time).
+#if CPP_VERSION >= 2020
+#  include <bit>
+   static_assert(std::endian::native == std::endian::little, "The .npy writer assumes a little-endian platform.");
+#elif defined(__BYTE_ORDER__) && defined(__ORDER_LITTLE_ENDIAN__)    // GCC, Clang
+   static_assert(__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__, "The .npy writer assumes a little-endian platform.");
+#elif defined(_WIN32)                                                 // MSVC: Windows is little-endian on all its architectures
+#else
+#  error "Cannot determine the byte order: the .npy writer assumes a little-endian platform."
+#endif
+
 namespace mangh { namespace npy
 {
-    static_assert(std::endian::native == std::endian::little, "The .npy writer assumes a little-endian platform.");
 
     /// @brief NumPy type descriptor ("descr") for the element type T.
     template<typename T>

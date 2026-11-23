@@ -34,7 +34,13 @@ project(
 
 
 # C++ language standard to compile for (required: no silent fallback to an older standard)
-set(CMAKE_CXX_STANDARD 20)
+# C++20 by default; C++17 or later may be chosen with -DCMAKE_CXX_STANDARD=17 (or in a preset).
+if(NOT DEFINED CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 20)
+endif()
+if(CMAKE_CXX_STANDARD LESS 17 OR CMAKE_CXX_STANDARD EQUAL 98)
+  message(FATAL_ERROR "C++17 or later is required (CMAKE_CXX_STANDARD = ${CMAKE_CXX_STANDARD})")
+endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # To avoid portability issues, language extensions (enabled by default)

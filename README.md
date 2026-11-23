@@ -25,7 +25,7 @@ python orbitals/visualize3d.py results/n4_l3_m1
 
 ## Build
 
-Requirements: CMake ≥ 3.24, a C++20 compiler (tested with clang++ 23 on Windows), Ninja.
+Requirements: CMake ≥ 3.24, a C++17 or later compiler (C++20 by default, `-DCMAKE_CXX_STANDARD=17` for C++17; tested with clang++ 23 on Windows), Ninja.
 [CLI11](https://github.com/CLIUtils/CLI11) ≥ 2.7 is found with `find_package`, or downloaded automatically.
 
 ```sh
