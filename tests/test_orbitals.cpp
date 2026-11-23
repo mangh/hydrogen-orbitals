@@ -17,6 +17,7 @@
 #include <cstdlib>
 #include <functional>
 #include <map>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -44,7 +45,10 @@ namespace
         if (ok) return;
         ++g_failures;
         std::printf("  FAILED: ");
-        std::printf(format, args...);
+        if constexpr (sizeof...(Args) == 0)
+            std::fputs(format, stdout);
+        else
+            std::printf(format, args...);
         std::printf("\n");
     }
 
@@ -214,31 +218,137 @@ namespace
 
     ///////////////////////////////////////////////////////////////////
     ///
-    ///     Mesh::for_state, Mesh::compute_total_probability
+    ///     Mesh::for_state, Mesh::total_probability, Mesh::mean_r, mean_r2, mean_inv_r
     ///
+
+    /// All states up to n = 6 in both bases, and a few large ones (the largest meshes).
+    std::vector<QuantumState> test_states()
+    {
+        std::vector<QuantumState> states;
+        for (Basis basis : { Basis::Complex, Basis::Real })
+        {
+            for (int n = 1; n <= 6; ++n)
+                for (int l = 0; l < n; ++l)
+                    for (int m = -l; m <= l; ++m)
+                        states.emplace_back(n, l, m, basis);
+            states.emplace_back(20, 0, 0, basis);
+            states.emplace_back(20, 10, -5, basis);
+            states.emplace_back(20, 19, 19, basis);
+            states.emplace_back(20, 19, -19, basis);
+        }
+        return states;
+    }
+
+    const char* basis_name(const QuantumState& qs) { return qs.basis == Basis::Real ? "real" : "complex"; }
 
     void test_mesh_probability()
     {
-        // All states up to n = 6, and a few large ones (the largest meshes).
-        std::vector<QuantumState> states;
-        for (int n = 1; n <= 6; ++n)
-            for (int l = 0; l < n; ++l)
-                for (int m = -l; m <= l; ++m)
-                    states.emplace_back(n, l, m);
-        states.emplace_back(20, 0, 0);
-        states.emplace_back(20, 10, -5);
-        states.emplace_back(20, 19, 19);
-
-        // The deficit is the radial trapezoid error (largest for n = 1: ~1e-4) plus the tail beyond the mesh (< 5e-6)
+        // The deficit is the radial trapezoid error (largest for n = 1: ~1e-4) plus the tail beyond the mesh (< 5e-6);
+        // the angular integrals are exact in both bases (for the real basis this needs > 2|m| azimuthal intervals)
         real_t worst = 0.0;
+        const auto states = test_states();
         for (const auto& qs : states)
         {
             const Mesh mesh = Mesh::for_state(qs);
             const real_t deficit = std::abs(1.0 - mesh.total_probability);
-            check(deficit < 2e-4, "n=%u, l=%u, m=%d: total probability = %.12f", qs.n, qs.l, qs.m, mesh.total_probability);
+            check(deficit < 2e-4, "n=%u, l=%u, m=%d (%s): total probability = %.12f",
+                  qs.n, qs.l, qs.m, basis_name(qs), mesh.total_probability);
             worst = std::max(worst, deficit);
         }
         std::printf("  %zu states, largest |1 - P| = %.3g\n", states.size(), worst);
+    }
+
+    void test_expectation_values()
+    {
+        // <r>, <r²> on the default mesh agree with the exact values to ~1e-4 (n = 1, radial step 0.2), better for larger n.
+        // <1/r> (and the energy E = -<1/r>/2) of the s states is less accurate: the integrand r·R(r)² rises linearly
+        // from r = 0, so the trapezoid rule loses its usual endpoint cancellation (error ≈ h²/12 · f'(0), 1.3% for 1s).
+        real_t worst_r = 0.0, worst_r2 = 0.0, worst_inv_r = 0.0, worst_inv_r_s = 0.0;
+        for (const auto& qs : test_states())
+        {
+            const Mesh mesh = Mesh::for_state(qs);
+            const real_t err_r = std::abs(mesh.mean_r / qs.MeanR() - 1.0);
+            const real_t err_r2 = std::abs(mesh.mean_r2 / qs.MeanR2() - 1.0);
+            const real_t err_inv_r = std::abs(mesh.mean_inv_r / qs.MeanInvR() - 1.0);
+            const real_t tol_inv_r = qs.l == 0 ? 1.5e-2 : 2e-4;
+
+            check(err_r < 2e-4, "n=%u, l=%u, m=%d (%s): <r> = %.12g, exact %.12g", qs.n, qs.l, qs.m, basis_name(qs), mesh.mean_r, qs.MeanR());
+            check(err_r2 < 2e-4, "n=%u, l=%u, m=%d (%s): <r^2> = %.12g, exact %.12g", qs.n, qs.l, qs.m, basis_name(qs), mesh.mean_r2, qs.MeanR2());
+            check(err_inv_r < tol_inv_r, "n=%u, l=%u, m=%d (%s): <1/r> = %.12g, exact %.12g", qs.n, qs.l, qs.m, basis_name(qs), mesh.mean_inv_r, qs.MeanInvR());
+
+            worst_r = std::max(worst_r, err_r);
+            worst_r2 = std::max(worst_r2, err_r2);
+            (qs.l == 0 ? worst_inv_r_s : worst_inv_r) = std::max(qs.l == 0 ? worst_inv_r_s : worst_inv_r, err_inv_r);
+        }
+        std::printf("  largest relative errors: <r> %.3g, <r^2> %.3g, <1/r> %.3g (l > 0), %.3g (l = 0)\n",
+                    worst_r, worst_r2, worst_inv_r, worst_inv_r_s);
+
+        // The exact values themselves: E = -<1/r>/2 (virial theorem), and two textbook cases
+        const QuantumState s1{ 1, 0, 0 }, p2{ 2, 1, 0 };
+        check(close(s1.MeanR(), 1.5, 1e-15) && close(s1.MeanR2(), 3.0, 1e-15) && close(s1.Energy(), -0.5, 1e-15), "1s exact values");
+        check(close(p2.MeanR(), 5.0, 1e-15) && close(p2.MeanR2(), 30.0, 1e-15) && close(p2.Energy(), -0.125, 1e-15), "2p exact values");
+        for (const auto& qs : { s1, p2, QuantumState{ 7, 3, 2 } })
+            check(close(qs.Energy(), -qs.MeanInvR() / 2, 1e-15), "n=%u: E != -<1/r>/2", qs.n);
+    }
+
+    void test_radial_convergence()
+    {
+        // The trapezoid rule converges as h²: halving the radial step divides the <1/r> error of 1s by ~4.
+        const QuantumState s1{ 1, 0, 0 };
+        real_t previous = 0.0;
+        for (real_t h : { 0.2, 0.1, 0.05, 0.025 })
+        {
+            const Mesh mesh = Mesh::for_state(s1, Resolution{ h, 0, 0 });
+            const real_t error = std::abs(mesh.mean_inv_r - s1.MeanInvR());
+            if (previous > 0.0)
+                check(previous / error > 3.8 && previous / error < 4.2, "h = %g: error ratio %.3f (expected ~4)", h, previous / error);
+            std::printf("  h = %-6g <1/r> error %.3e\n", h, error);
+            previous = error;
+        }
+    }
+
+    void test_resolution()
+    {
+        const QuantumState qs{ 3, 2, -2 };
+
+        // A custom resolution gives the requested mesh
+        const Mesh mesh = Mesh::for_state(qs, Resolution{ 0.5, 31, 61 });
+        check(mesh.psi.rows() == 31 && mesh.psi.columns() == 61, "custom angular points: %zu x %zu", mesh.psi.rows(), mesh.psi.columns());
+        check(close(mesh.radial.delta, 0.5, 1e-12) && close(mesh.radial.back(), qs.RadialExtent(), 1e-15), "custom radial step");
+        check(std::abs(1.0 - mesh.total_probability) < 1e-3, "custom mesh: total probability %.12f", mesh.total_probability);
+
+        // Invalid resolutions are rejected
+        auto rejected = [&](const Resolution& res)
+        {
+            try { Mesh::for_state(qs, res); }
+            catch (const std::invalid_argument&) { return true; }
+            return false;
+        };
+        check(rejected({ 0.0, 0, 0 }), "radial step 0 accepted");
+        check(rejected({ -0.1, 0, 0 }), "negative radial step accepted");
+        check(rejected({ 0.2, 20, 0 }), "even number of polar points accepted");
+        check(rejected({ 0.2, 3, 0 }), "polar points < 2l + 1 accepted");
+        check(rejected({ 0.2, 0, 40 }), "odd number of azimuthal intervals accepted");
+        check(rejected({ 0.2, 0, 5 }), "azimuthal intervals <= 2|m| accepted");
+        check(rejected({ 0.001, 1001, 2001 }), "a mesh larger than Resolution::max_psi_bytes accepted");
+        check(!rejected({ 0.2, 5, 7 }), "the smallest valid angular mesh for l = 2, |m| = 2 rejected");
+    }
+
+    void test_orbital_names()
+    {
+        struct { int n, l, m; Basis basis; const char* name; } cases[] = {
+            { 1, 0, 0, Basis::Complex, "1s" },        { 1, 0, 0, Basis::Real, "1s" },
+            { 2, 1, 1, Basis::Real, "2p_x" },         { 2, 1, -1, Basis::Real, "2p_y" },     { 2, 1, 0, Basis::Real, "2p_z" },
+            { 3, 2, -2, Basis::Real, "3d_xy" },       { 3, 2, 0, Basis::Real, "3d_z2" },     { 3, 2, 2, Basis::Real, "3d_x2-y2" },
+            { 4, 3, -2, Basis::Real, "4f_xyz" },      { 4, 3, 3, Basis::Real, "4f_x(x2-3y2)" },
+            { 5, 4, -2, Basis::Real, "5g_m-2" },      { 4, 3, 1, Basis::Complex, "4f(m=1)" },
+            { 20, 19, -19, Basis::Complex, "20y(m=-19)" },
+        };
+        for (const auto& c : cases)
+        {
+            const auto name = QuantumState{ c.n, c.l, c.m, c.basis }.Name();
+            check(name == c.name, "n=%d, l=%d, m=%d: name %s, expected %s", c.n, c.l, c.m, name.c_str(), c.name);
+        }
     }
 }
 
@@ -251,6 +361,10 @@ int main(int argc, char** argv)
         { "spherical_harmonics", test_spherical_harmonics },
         { "radial_extent", test_radial_extent },
         { "mesh_probability", test_mesh_probability },
+        { "expectation_values", test_expectation_values },
+        { "radial_convergence", test_radial_convergence },
+        { "resolution", test_resolution },
+        { "orbital_names", test_orbital_names },
     };
 
     std::vector<std::string> names(argv + 1, argv + argc);

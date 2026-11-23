@@ -5,9 +5,10 @@ and saves the wave function on a spherical mesh as NumPy files. Two Python scrip
 2D slices (Matplotlib) and interactive 3D isosurfaces (Plotly).
 
 ```
-orbitals.exe -n 4 -l 3 -m 1          →  results/n4_l3_m1/{r,theta,phi,psi,qn}.npy
+orbitals.exe -n 4 -l 3 -m 1               →  results/n4_l3_m1/{r,theta,phi,psi,qn}.npy, info.json
+orbitals.exe -n 3 -l 2 -m -2 --basis real  →  results/n3_l2_m-2_real/   (the 3d_xy orbital)
 python orbitals/visualize2d.py results/n4_l3_m1
-python orbitals/visualize3d.py results/n4_l3_m1
+python orbitals/visualize3d.py results/n3_l2_m-2_real --quantity real
 ```
 
 ## Physics and conventions
@@ -15,13 +16,27 @@ python orbitals/visualize3d.py results/n4_l3_m1
 - **Units:** atomic units. Distances are in Bohr radii (a0 = 1). The proton is treated as infinitely heavy (no reduced-mass correction).
 - **Wave function:** Ψn,l,m(r,θ,ϕ) = Rn,l(r) · Yl,m(θ,ϕ), with
   - Rn,l(r) = N · e^(−ρ) · (2ρ)^l · L^(2l+1)_(n−l−1)(2ρ), where ρ = r/n. L is the generalized Laguerre polynomial in the modern convention (L₁^(α)(x) = 1 + α − x). Rn,l is normalized: ∫ R² r² dr = 1.
-  - Yl,m is the **complex** spherical harmonic, normalized to 1 on the sphere, **with the Condon–Shortley phase** (−1)^m. This is the convention of SciPy's `sph_harm_y` and C++17's `std::sph_legendre`.
+  - Yl,m is, by default, the **complex** spherical harmonic, normalized to 1 on the sphere, **with the Condon–Shortley phase** (−1)^m. This is the convention of SciPy's `sph_harm_y` and C++17's `std::sph_legendre`. These states are eigenstates of Lz with eigenvalue m.
+  - With `--basis real`, Yl,m is the **real** spherical harmonic: √2·(−1)^m·Re Yl,m for m > 0, Yl,0 for m = 0, and √2·(−1)^m·Im Yl,|m| for m < 0. These are the orbitals of chemistry, which are not eigenstates of Lz for m ≠ 0. Each is proportional to a Cartesian polynomial divided by r^l, and is named after it: for l = 1, m = 1, −1, 0 give p_x, p_y, p_z; for l = 2, m = −2 … 2 give d_xy, d_yz, d_z2, d_xz, d_x2-y2; l = 3 gives the seven f orbitals. The positive lobe points along the positive axes, so p_x > 0 for x > 0.
 - **Quantum numbers:** 1 ≤ n ≤ 20, 0 ≤ l < n, −l ≤ m ≤ l. The limit n ≤ 20 is `QuantumState::max_n`. It is the range over which the radial cut-off (`QuantumState::RadialExtent`, r_max = n(2n + 12)) was verified to leave less than 5·10⁻⁶ of the probability outside the mesh.
-- **Mesh** (`Mesh::for_state`):
+- **Mesh** (`Mesh::for_state`; the defaults can be changed with the options under [Run](#run)):
   - r ∈ [0, r_max] with a step of 0.2;
-  - θ ∈ [0, π] with an odd number of nodes (≥ 21 and ≥ 2l + 1);
-  - ϕ ∈ [0, 2π], with at least max(40, 4|m|) intervals; the last node repeats ϕ = 0.
-- **Normalization check:** the program integrates |Ψ|² over the mesh and prints the total probability P. For θ it uses the Clenshaw–Curtis rule, which is exact for |Yl,m|²; for r and ϕ it uses the trapezoid rule. P ≈ 1 up to the radial quadrature error, which is about 1·10⁻⁴ for n = 1 and decreases with n.
+  - θ ∈ [0, π] with an odd number of nodes (default max(21, 2l + 1)). The node count must be odd, so that there is a node at θ = π/2, and ≥ 2l + 1, so that the θ integral is exact.
+  - ϕ ∈ [0, 2π], with max(40, 4|m|) intervals by default; the last node repeats ϕ = 0. The number of intervals must be even, so that every half-plane has its opposite in the xz plots, and > 2|m|, so that the ϕ integral is exact for real orbitals.
+- **Checks:** the program integrates over the mesh and prints a table comparing each result with the exact formula. It also writes the same numbers to `info.json`:
+
+  | quantity              | exact value                          |
+  |-----------------------|--------------------------------------|
+  | total probability P   | 1                                    |
+  | ⟨r⟩                   | (3n² − l(l+1)) / 2                   |
+  | ⟨r²⟩                  | n² (5n² + 1 − 3l(l+1)) / 2           |
+  | ⟨1/r⟩                 | 1 / n²                               |
+  | energy E = −⟨1/r⟩/2   | −1 / (2n²) Eh  (1 Eh = 27.211386 eV) |
+
+  The energy on the mesh comes from the virial theorem (⟨V⟩ = 2E for the Coulomb potential), so it tests ⟨1/r⟩ and the radial quadrature, not a separate solver.
+  - **Quadrature:** for θ, the Clenshaw–Curtis rule, which is exact for |Yl,m|². For ϕ, the periodic trapezoid rule, which is exact here. For r, the trapezoid rule, whose error is about h² (h = radial step); this error dominates.
+  - **Typical accuracy, default step 0.2:** P, ⟨r⟩ and ⟨r²⟩ are within about 1·10⁻⁴ for n = 1, and better for larger n.
+  - **⟨1/r⟩ and E for s states (l = 0):** 1.3% off for 1s, because the integrand r·R² rises linearly from r = 0. This is the trapezoid rule's worst case. Halving the step divides the error by 4: `--radial-step 0.025` gives 2·10⁻⁴.
 
 ## Build
 
@@ -48,10 +63,20 @@ To set the compiler or a local CLI11 path for your machine only, put a `CMakeUse
 ## Run
 
 ```
-orbitals.exe -n <n> -l <l> -m <m> [-o <dir>]
+orbitals.exe -n <n> -l <l> -m <m> [--basis complex|real] [--radial-step <h>]
+             [--polar-points <Nθ>] [--azimuthal-points <Nϕ>] [-o <dir>]
 ```
 
-The output directory defaults to `results/n<n>_l<l>_m<m>`. It contains:
+| option               | default              | constraint                                          |
+|----------------------|----------------------|-----------------------------------------------------|
+| `--basis`            | `complex`            | `complex` (e^(imϕ), eigenstates of Lz) or `real` (p_x, d_xy …) |
+| `--radial-step`      | 0.2 (Bohr radii)     | 0 < h ≤ r_max / 2                                    |
+| `--polar-points`     | max(21, 2l + 1)      | odd, ≥ max(3, 2l + 1)                                |
+| `--azimuthal-points` | max(40, 4·abs(m)) + 1 | odd, ≥ 5, > 2·abs(m) + 1 (the node at 2π included)  |
+
+A mesh whose `psi` would exceed 4 GB is refused. Invalid options are reported, and the program exits with a non-zero code.
+
+The output directory defaults to `results/n<n>_l<l>_m<m>`, with `_real` appended for the real basis. It contains:
 
 | file        | contents                                              |
 |-------------|-------------------------------------------------------|
@@ -60,8 +85,10 @@ The output directory defaults to `results/n<n>_l<l>_m<m>`. It contains:
 | `phi.npy`   | azimuthal nodes ϕ, shape (Nϕ,)                         |
 | `psi.npy`   | complex128 Ψ, shape (Nr, Nθ, Nϕ), C order              |
 | `qn.npy`    | int32 quantum numbers [n, l, m]                        |
+| `info.json` | basis, orbital name, mesh shape and step, and the checks (each as `{"grid": …, "exact": …}`) |
 
-The size of `psi.npy` grows quickly with n: 5 MB for n = 4, and about 250 MB for n = 20, l = m = 19.
+For the real basis, `psi.npy` is still complex128, with a zero imaginary part, so all the tools read both bases the same way.
+The size of `psi.npy` grows quickly with n: 5 MB for n = 4, and about 250 MB for n = 20, l = m = 19. Finer angular meshes multiply that: `--polar-points 91 --azimuthal-points 181` is about 20 times the default.
 
 ## Visualize
 
@@ -75,7 +102,7 @@ python orbitals/visualize2d.py results/n4_l3_m1 --quantity density|real|imag --p
 python orbitals/visualize3d.py results/n4_l3_m1 --fraction 0.5 0.9 --grid 80
 ```
 
-`--quantity real` and `imag` show Re Ψ and Im Ψ of the **complex** orbital. For m ≠ 0, these are the cos(mϕ) and sin(mϕ) combinations. They are not the chemists' real orbitals labelled by m (px, py, dxy …).
+`--quantity real` and `imag` show Re Ψ and Im Ψ. For a complex orbital with m ≠ 0, these are the cos(mϕ) and sin(mϕ) combinations. To show a chemists' real orbital (p_y, d_xy …) with its signed lobes, compute it with `--basis real` and plot `--quantity real`; its imaginary part is zero. The plot titles give the orbital name from `info.json`.
 
 ## Tests
 
@@ -87,15 +114,19 @@ ctest --test-dir build        # or: ctest --preset release
   - the Laguerre and Legendre functions, against closed forms and against `std::assoc_laguerre` / `std::sph_legendre` where the standard library provides them (MSVC STL, libstdc++);
   - that the spherical harmonics are orthonormal, for both the complex and the real basis;
   - that the tail beyond `RadialExtent()` is < 5·10⁻⁶ for every (n, l);
-  - that the mesh probability is ≈ 1.
-- `scipy_*` tests run the program for a few states and compare `psi.npy` with an independent SciPy formula (`tests/check_against_scipy.py`). They are added only if Python with NumPy and SciPy is found when CMake configures.
+  - that the mesh probability, ⟨r⟩, ⟨r²⟩ and ⟨1/r⟩ agree with the exact values, in both bases;
+  - that the radial quadrature error falls as h²;
+  - that invalid resolutions are rejected;
+  - the orbital names.
+- `cli_*` tests check that invalid command-line options make the program fail.
+- `scipy_*` tests run the program for a few states in both bases and compare `psi.npy` with an independent SciPy formula (`tests/check_against_scipy.py`). They are added only if Python with NumPy and SciPy is found when CMake configures.
 
 ## Layout
 
 ```
 orbitals/main.cpp             command line (CLI11), runs the computation, saves the mesh
-orbitals/quantum_state.hpp    QuantumState: Rn,l, Yl,m, Ψ, radial extent
-orbitals/mesh.hpp             Mesh: the grid, Ψ on the grid, quadrature, .npy output
+orbitals/quantum_state.hpp    QuantumState: Rn,l, Yl,m (complex or real basis), Ψ, radial extent, orbital name, exact values
+orbitals/mesh.hpp             Mesh: the grid and its resolution, Ψ on the grid, quadrature and checks, .npy and info.json output
 orbitals/math/                Laguerre and Legendre polynomials, spherical harmonics, factorial, Kahan sum
 orbitals/npy.hpp              minimal .npy writer
 orbitals/visualize2d.py       2D slices

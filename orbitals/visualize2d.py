@@ -7,9 +7,12 @@ Examples:
     python visualize2d.py results/n4_l3_m1
     python visualize2d.py results/n4_l3_m1 --quantity real --plane xy
     python visualize2d.py results/n4_l3_m1 --plane xz --angle 45
+    python visualize2d.py results/n3_l2_m-2_real --quantity real --plane xy
 """
 
 import argparse
+import json
+import sys
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -20,6 +23,21 @@ QUANTITIES = {
     "real": (lambda psi: psi.real, "Re Ψ"),
     "imag": (lambda psi: psi.imag, "Im Ψ"),
 }
+
+
+def load(directory):
+    """Mesh saved by orbitals.exe: r, theta, phi, psi[r, theta, phi], and a description of the state.
+
+    The description is the orbital name with (n, l, m), e.g. "3d_xy (n=3, l=2, m=-2)", taken from info.json;
+    for older output directories without it, only "n=3, l=2, m=-2" (from qn.npy).
+    """
+    r, theta, phi, psi = (np.load(directory / f"{name}.npy") for name in ("r", "theta", "phi", "psi"))
+    n, l, m = (int(q) for q in np.load(directory / "qn.npy"))
+    state = f"n={n}, l={l}, m={m}"
+    info = directory / "info.json"
+    if info.exists():
+        state = f"{json.loads(info.read_text())['orbital']} ({state})"
+    return r, theta, phi, psi, state
 
 
 def nearest(grid, angle):
@@ -39,11 +57,12 @@ def main():
     parser.add_argument("--levels", type=int, default=100, help="number of contour levels")
     args = parser.parse_args()
 
-    r, theta, phi, psi = (np.load(args.data / f"{name}.npy") for name in ("r", "theta", "phi", "psi"))
-    n, l, m = np.load(args.data / "qn.npy")
+    r, theta, phi, psi, state = load(args.data)
 
     func, label = QUANTITIES[args.quantity]
     f = func(psi)  # shape (r, θ, ϕ)
+    if not f.any():
+        sys.exit(f"{args.quantity} is zero everywhere for {state}, nothing to draw")  # e.g. imag for a real orbital
 
     if args.plane == "xz":
         # Two opposite half-planes ϕ0 and ϕ0 + π, joined along θ into one full turn
@@ -81,7 +100,7 @@ def main():
     ax.set_aspect("equal")
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
-    ax.set_title(f"{label}   n={n}, l={l}, m={m}   ({args.plane.upper()}, {where})")
+    ax.set_title(f"{label}   {state}   ({args.plane.upper()}, {where})")
     plt.show()
 
 

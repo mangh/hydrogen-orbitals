@@ -10,8 +10,31 @@
 add_executable(test_orbitals test_orbitals.cpp)
 target_link_libraries(test_orbitals PRIVATE orbitals_headers)
 
-foreach(_test IN ITEMS laguerre legendre spherical_harmonics radial_extent mesh_probability)
+foreach(_test IN ITEMS laguerre legendre spherical_harmonics radial_extent mesh_probability
+                       expectation_values radial_convergence resolution orbital_names)
   add_test(NAME ${_test} COMMAND test_orbitals ${_test})
+endforeach()
+
+##########################################################################
+#
+#   Command line: invalid options must be rejected (non-zero exit code)
+#
+
+set(_bad_options
+  "bad_polar_points|-n 3 -l 2 -m 1 --polar-points 20"
+  "bad_azimuthal_points|-n 3 -l 2 -m 2 --azimuthal-points 5"
+  "bad_radial_step|-n 1 -l 0 -m 0 --radial-step 0"
+  "bad_basis|-n 2 -l 1 -m 0 --basis imaginary"
+  "bad_l|-n 2 -l 2 -m 0"
+)
+foreach(_case IN LISTS _bad_options)
+  string(REPLACE "|" ";" _parts "${_case}")
+  list(GET _parts 0 _name)
+  list(GET _parts 1 _args)
+  separate_arguments(_args UNIX_COMMAND "${_args}")
+  add_test(NAME cli_${_name}
+    COMMAND orbitals ${_args} -o "${CMAKE_CURRENT_BINARY_DIR}/data/rejected")
+  set_tests_properties(cli_${_name} PROPERTIES WILL_FAIL TRUE)
 endforeach()
 
 ##########################################################################
@@ -30,15 +53,17 @@ if(Python3_FOUND)
 endif()
 
 if(Python3_FOUND AND NOT _scipy_missing)
-  foreach(_state IN ITEMS "1;0;0" "3;2;-2" "4;3;1" "20;19;19" "20;5;-3")
+  foreach(_state IN ITEMS "1;0;0;complex" "3;2;-2;complex" "4;3;1;complex" "20;19;19;complex" "20;5;-3;complex"
+                          "2;1;-1;real" "3;2;-2;real" "4;3;3;real" "20;19;-19;real" "20;5;-3;real")
     list(GET _state 0 _n)
     list(GET _state 1 _l)
     list(GET _state 2 _m)
-    set(_name "n${_n}_l${_l}_m${_m}")
+    list(GET _state 3 _basis)
+    set(_name "n${_n}_l${_l}_m${_m}_${_basis}")
     set(_dir "${CMAKE_CURRENT_BINARY_DIR}/data/${_name}")
 
     add_test(NAME generate_${_name}
-      COMMAND orbitals -n ${_n} -l ${_l} -m ${_m} -o "${_dir}")
+      COMMAND orbitals -n ${_n} -l ${_l} -m ${_m} --basis ${_basis} -o "${_dir}")
     set_tests_properties(generate_${_name} PROPERTIES FIXTURES_SETUP data_${_name})
 
     add_test(NAME scipy_${_name}

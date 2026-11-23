@@ -2,7 +2,9 @@
 #define MANGH_HYDROGENIUM_STATE_HPP
 
 #include <cmath>
+#include <cstdlib>
 #include <stdexcept>
+#include <string>
 
 #include "math/assoc_laguerre.hpp"
 #include "math/factorial.hpp"
@@ -14,6 +16,17 @@ namespace mangh { namespace hydrogenium
 {
     using namespace mangh::math;
     using std::invalid_argument;
+
+    /**
+     * @brief Basis of the angular functions.
+     *
+     * - `Complex` - the complex spherical harmonics `Yl,m(θ,ϕ) ∝ e^(imϕ)`: eigenfunctions of Lz (m = the Lz eigenvalue),
+     *
+     * - `Real` - the real spherical harmonics (the orbitals of chemistry: px, py, pz, dxy, ...):
+     *   `∝ cos(mϕ)` for m > 0, `∝ sin(|m|ϕ)` for m < 0, and `Yl,0` for m = 0.
+     *   They are real combinations of `Yl,m` and `Yl,-m`, so they are not eigenfunctions of Lz (except for m = 0).
+     */
+    enum class Basis { Complex, Real };
 
     /**
      * @brief Quantum state.
@@ -64,15 +77,17 @@ namespace mangh { namespace hydrogenium
          * 
          * @param n - principal quantum number (n > 0),
          * @param l - azimuthal number (0 <= l < n),
-         * @param m - magnetic quantum number (-l <= m <= l).
+         * @param m - magnetic quantum number (-l <= m <= l),
+         * @param basis - basis of the angular functions (complex or real spherical harmonics).
          *
          * @exception std::invalid_argument - raised when arguments (n, l, m) do not meet the prerequisites.
          * 
          */
-        QuantumState(int n, int l, int m)
+        QuantumState(int n, int l, int m, Basis basis = Basis::Complex)
             : n(n > 0 ? static_cast<unsigned>(n) : throw std::invalid_argument(badQuantumNumbers))
             , l(0 <= l && l < n ? static_cast<unsigned>(l) : throw std::invalid_argument(badQuantumNumbers))
             , m(-l <= m && m <= l ? m : throw std::invalid_argument(badQuantumNumbers))
+            , basis(basis)
             // auxiliary variables
             , ra0(1.0)
             , nra0(ra0 * n)
@@ -134,9 +149,11 @@ namespace mangh { namespace hydrogenium
         }
 
         /**
-         * @brief Angular part of the wave function (aka spherical harmonics `Yl,m(θ,ϕ)`).
+         * @brief Angular part of the wave function (aka spherical harmonics `Yl,m(θ,ϕ)`) in the state's basis.
          *
-         * - `Yl,m(θ,ϕ) = Pl,m(cosθ) · e^(imϕ)`.
+         * - complex basis: `Yl,m(θ,ϕ) = Pl,m(cosθ) · e^(imϕ)`,
+         *
+         * - real basis: AngularRealBasis(θ,ϕ) (returned as a complex number with a zero imaginary part).
          *
          * @param theta - polar angle 0 ≤ θ ≤ π (from the positive Z axis),
          * @param phi - azimuthal angle 0 ≤ ϕ < 2π (from the X-axis, in the XY-plane).
@@ -152,7 +169,9 @@ namespace mangh { namespace hydrogenium
          */
         complex_t Angular(real_t theta, real_t phi) const
         {
-            return spherical_harmonic(l, m, theta, phi);
+            return basis == Basis::Real
+                ? complex_t(spherical_real_basis(l, m, theta, phi))
+                : spherical_harmonic(l, m, theta, phi);
         }
 
         /**
@@ -186,6 +205,52 @@ namespace mangh { namespace hydrogenium
             return Radial(r) * Angular(theta, phi);
         }
 
+        /**
+         * @brief Name of the orbital (ASCII), e.g. `1s`, `2p_x`, `3d_z2`, `4f_xyz` (real basis), `4f(m=-1)` (complex basis).
+         *
+         * @remarks The real orbitals of l <= 3 are named after the Cartesian polynomials they are proportional to
+         * (`z2` stands for 3z² - r², `x2-y2` for x² - y², and so on); for l > 3 the name gives m (`5g_m-2`).
+         * The letters for l are s, p, d, f, g, h, i, k, ... (alphabetical from f on, without j, and without the p and s already used).
+         */
+        std::string Name() const
+        {
+            static constexpr const char* letters = "spdfghiklmnoqrtuvwxy";
+            static constexpr const char* cartesian[4][7] = {
+                { "", "", "", "", "", "", "" },
+                { "y", "z", "x", "", "", "", "" },
+                { "xy", "yz", "z2", "xz", "x2-y2", "", "" },
+                { "y(3x2-y2)", "xyz", "yz2", "z3", "xz2", "z(x2-y2)", "x(x2-3y2)" },
+            };
+
+            std::string name = std::to_string(n) + letters[l];
+            if (l == 0)
+                return name;
+            if (basis == Basis::Complex)
+                return name + "(m=" + std::to_string(m) + ")";
+            if (l <= 3)
+                return name + "_" + cartesian[l][m + static_cast<int>(l)];
+            return name + "_m" + std::to_string(m);
+        }
+
+        ///////////////////////////////////////////////////////////////////
+        ///
+        ///     Exact values (to check the numerical results against)
+        ///
+        ///     The radial expectation values are the same in both bases (they depend on n and l only).
+        ///
+
+        /// @brief Energy `En = -1/(2n²)` in hartrees (`1 Eh = 27.211386245988 eV`), with a0 = ra0 = 1.
+        real_t Energy() const { return -1.0 / (2.0 * n * n * ra0); }
+
+        /// @brief Mean distance from the nucleus `<r> = a0 · (3n² - l(l+1)) / 2`.
+        real_t MeanR() const { return ra0 * (3.0 * n * n - l * (l + 1.0)) / 2.0; }
+
+        /// @brief Mean squared distance `<r²> = a0² · n² (5n² + 1 - 3l(l+1)) / 2`.
+        real_t MeanR2() const { return ra0 * ra0 * n * n * (5.0 * n * n + 1.0 - 3.0 * l * (l + 1.0)) / 2.0; }
+
+        /// @brief Mean inverse distance `<1/r> = 1 / (a0 · n²)`; by the virial theorem `E = -<1/r> / 2`.
+        real_t MeanInvR() const { return 1.0 / (ra0 * n * n); }
+
         ///////////////////////////////////////////////////////////////////
         ///
         ///     Properties
@@ -202,6 +267,9 @@ namespace mangh { namespace hydrogenium
         /// @brief Magnetic quantum number m (-l <= m <= l).
         /// Specifies the orientation of the orbital in space.
         const int m;
+
+        /// @brief Basis of the angular functions (complex or real spherical harmonics).
+        const Basis basis;
  
     private:
 

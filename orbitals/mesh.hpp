@@ -8,6 +8,12 @@
 #include <cstdint>
 #include <cstdlib>
 #include <filesystem>
+#include <fstream>
+#include <iomanip>
+#include <limits>
+#include <sstream>
+#include <stdexcept>
+#include <string>
 #include <vector>
 
 #include "math/constants.hpp"
@@ -21,6 +27,25 @@
 namespace mangh { namespace hydrogenium
 {
     using namespace mangh::math;
+
+    /**
+     * @brief Mesh resolution; a zero means the default (see Mesh::for_state).
+     */
+    struct Resolution
+    {
+        /// @brief Radial step (in a0).
+        real_t radial_step = 0.2;
+
+        /// @brief Number of polar nodes θ ∈ [0, π] (odd, >= 2l + 1); 0: max(21, 2l + 1).
+        std::size_t polar_points = 0;
+
+        /// @brief Number of azimuthal nodes ϕ ∈ [0, 2π], the duplicate node 2π included
+        /// (the number of intervals, points - 1, must be even, >= 4 and > 2|m|); 0: max(40, 4|m|) + 1.
+        std::size_t azimuthal_points = 0;
+
+        /// @brief The largest mesh allowed: the size of psi in bytes (4 GB).
+        static constexpr std::size_t max_psi_bytes = std::size_t{4000} * 1000 * 1000;
+    };
 
     /**
      * @brief Data grid (in spherical coordinates)
@@ -50,6 +75,12 @@ namespace mangh { namespace hydrogenium
 
         /// @brief Total probability ∫|Ψ|² dV over the volume covered by the coordinates (r, θ, φ).
         real_t total_probability;
+
+        /// @brief Expectation values `<r>`, `<r²>`, `<1/r>` integrated over the mesh (and divided by total_probability),
+        /// to be compared with the exact QuantumState::MeanR(), MeanR2(), MeanInvR().
+        real_t mean_r;
+        real_t mean_r2;
+        real_t mean_inv_r;
 
         ///////////////////////////////////////////////////////////////////
         ///
@@ -82,36 +113,63 @@ namespace mangh { namespace hydrogenium
         {
             compute_wave_function();
 
-            // The following calculation isn't necessary
-            // when we use a normalized function Ψ (for which the total probability ≈ 1).
-            // We do it just to check if that's really the case:
-            total_probability = compute_total_probability();
+            // The following calculations aren't necessary for the visualization;
+            // they check the wave function (normalization, expectation values) and the quadrature:
+            const auto density = radial_density();
+            total_probability = integrate_radial(density, [](real_t) { return 1.0; });
+            mean_r = integrate_radial(density, [](real_t r) { return r; }) / total_probability;
+            mean_r2 = integrate_radial(density, [](real_t r) { return r * r; }) / total_probability;
+            mean_inv_r = integrate_radial(density, [](real_t r) { return 1.0 / r; }) / total_probability;
         }
 
         /**
          * @brief The mesh used by the application for the quantum state @p qs.
          *
-         * - r ∈ [0, RadialExtent()], with a fixed step of 0.2 (the range scales with n, see QuantumState::RadialExtent),
+         * - r ∈ [0, RadialExtent()] (the range scales with n, see QuantumState::RadialExtent), with the step @p res.radial_step
+         *   (rounded so that it divides the range evenly),
          *
          * - θ ∈ [0, π]: an odd number of nodes, so that a node lies exactly at θ = π/2 (XY-plane plots),
-         *   and N = nodes - 1 >= 2l intervals, so that the θ integral (Clenshaw–Curtis, see compute_total_probability) is exact for |Yl,m|²,
+         *   and N = nodes - 1 >= 2l intervals, so that the θ integral (Clenshaw–Curtis, see clenshaw_curtis_weights) is exact for |Yl,m|²;
+         *   by default max(21, 2l + 1) nodes,
          *
          * - ϕ ∈ [0, 2π] (the last node duplicates the first): an even number of intervals, so that for every node ϕ
-         *   there is also a node at ϕ + π (the opposite half-plane in the XZ-plane plots), and >= 4|m| intervals:
-         *   at least 4 samples per period of cos(mϕ) in the XY-plane plots (and > 2|m|, which also keeps the ϕ integral
-         *   exact for real orbitals, where |Ψ|² contains cos²(mϕ)).
+         *   there is also a node at ϕ + π (the opposite half-plane in the XZ-plane plots), and > 2|m| intervals, which keeps
+         *   the ϕ integral exact for real orbitals, where |Ψ|² contains cos²(mϕ); by default max(40, 4|m|) intervals,
+         *   i.e. at least 4 samples per period of cos(mϕ) in the XY-plane plots.
+         *
+         * @exception std::invalid_argument - when @p res does not meet these conditions.
          */
-        static Mesh for_state(const QuantumState& qs)
+        static Mesh for_state(const QuantumState& qs, const Resolution& res = {})
         {
             static constexpr real_t PI = mangh::math::PI_V<real_t>;
 
-            constexpr real_t radialStep = 0.2;
+            auto str = [](real_t x) { std::ostringstream s; s << x; return s.str(); };
+
             const real_t radialMax = qs.RadialExtent();
-            const auto radialPoints = static_cast<std::size_t>(std::lround(radialMax / radialStep)) + 1;
+            if (!(res.radial_step > 0.0 && res.radial_step <= radialMax / 2))
+                throw std::invalid_argument("radial step = " + str(res.radial_step)
+                    + " must satisfy 0 < step <= " + str(radialMax / 2) + " (half the radial range)");
+            const auto radialPoints = static_cast<std::size_t>(std::lround(radialMax / res.radial_step)) + 1;
 
-            const std::size_t polarPoints = std::max<std::size_t>(21, 2 * qs.l + 1);
+            const std::size_t polarMin = std::max<std::size_t>(3, 2 * qs.l + 1);
+            const std::size_t polarPoints = res.polar_points ? res.polar_points : std::max<std::size_t>(21, polarMin);
+            if (polarPoints % 2 == 0 || polarPoints < polarMin)
+                throw std::invalid_argument("polar points = " + std::to_string(polarPoints)
+                    + " must be odd and >= " + std::to_string(polarMin) + " (max(3, 2l + 1))");
 
-            const std::size_t azimuthalPoints = std::max<std::size_t>(40, static_cast<std::size_t>(4 * std::abs(qs.m))) + 1;
+            const auto twoM = static_cast<std::size_t>(2 * std::abs(qs.m));
+            const std::size_t azimuthalPoints = res.azimuthal_points ? res.azimuthal_points : std::max<std::size_t>(40, 2 * twoM) + 1;
+            const std::size_t azimuthalIntervals = azimuthalPoints > 0 ? azimuthalPoints - 1 : 0;
+            if (azimuthalIntervals % 2 != 0 || azimuthalIntervals < 4 || azimuthalIntervals <= twoM)
+                throw std::invalid_argument("azimuthal points = " + std::to_string(azimuthalPoints)
+                    + " must be odd (an even number of intervals), >= 5 and > 2|m| + 1 = " + std::to_string(twoM + 1));
+
+            const std::size_t bytes = radialPoints * polarPoints * azimuthalPoints * sizeof(complex_t);
+            if (bytes > Resolution::max_psi_bytes)
+                throw std::invalid_argument("the mesh " + std::to_string(radialPoints) + " x " + std::to_string(polarPoints)
+                    + " x " + std::to_string(azimuthalPoints) + " would need " + std::to_string(bytes / 1000000)
+                    + " MB for psi (limit: " + std::to_string(Resolution::max_psi_bytes / 1000000)
+                    + " MB): use a larger radial step or fewer angular points");
 
             return Mesh
             {
@@ -196,38 +254,48 @@ namespace mangh { namespace hydrogenium
         }
 
         /**
-         * @brief Integrates |Ψ|² over the mesh.
+         * @brief Integrates |Ψ|² over the angles at every radial node: `ρ(r) = ∫ |Ψ(r,θ,ϕ)|² sinθ dθ dϕ`.
          *
-         * - r: trapezoid rule (r = 0 contributes nothing because of r²),
          * - θ: Clenshaw–Curtis rule (exact for |Yl,m|² with l <= (polar.size() - 1) / 2),
          * - ϕ: periodic trapezoid rule (the duplicate node ϕ = 2π is skipped).
          *
-         * @remarks The result should be very close to 1 for a normalized Ψ.
-         *
-         * @returns The total probability for the whole mesh.
+         * @returns ρ at the radial nodes (for an exact quadrature, ρ(r) = Rn,l(r)²).
          */
-        real_t compute_total_probability() const
+        std::vector<real_t> radial_density() const
         {
             const auto w_theta = clenshaw_curtis_weights(polar.size() - 1);
 
-            // Kahan summation keeps the rounding error of the many small terms in check
-            KahanSum<real_t> total;
+            std::vector<real_t> density(radial.size());
+            for (std::size_t r = 0; r < radial.size(); ++r)
+            {
+                // Kahan summation keeps the rounding error of the many small terms in check
+                KahanSum<real_t> sum;
+                for (std::size_t theta = 0; theta < polar.size(); ++theta)
+                    for (std::size_t phi = 0; phi + 1 < azimuthal.size(); ++phi)
+                        sum += w_theta[theta] * azimuthal.delta * std::norm(psi(r, theta, phi));
+                density[r] = sum.value();
+            }
+            return density;
+        }
 
+        /**
+         * @brief Radial integral `∫ f(r) ρ(r) r² dr` over the mesh (trapezoid rule), i.e. `∫ f(r) |Ψ|² dV`.
+         *
+         * @param density - ρ(r) at the radial nodes (see radial_density),
+         * @param f       - function of r; it is not evaluated at r = 0, where r² makes the integrand vanish
+         *                  for f = 1, r, r², 1/r (but not for 1/r²).
+         *
+         * @returns The integral (for f = 1: the total probability, which should be very close to 1 for a normalized Ψ).
+         */
+        template<typename F>
+        real_t integrate_radial(const std::vector<real_t>& density, F&& f) const
+        {
+            KahanSum<real_t> total;
             for (std::size_t r = 1; r < radial.size(); ++r)
             {
                 const real_t w_r = radial[r] * radial[r] * radial.delta * (r + 1 == radial.size() ? 0.5 : 1.0);
-
-                for (std::size_t theta = 0; theta < polar.size(); ++theta)
-                {
-                    const real_t w_rt = w_r * w_theta[theta] * azimuthal.delta;
-
-                    for (std::size_t phi = 0; phi + 1 < azimuthal.size(); ++phi)
-                    {
-                        total += w_rt * std::norm(psi(r, theta, phi));
-                    }
-                }
+                total += w_r * f(radial[r]) * density[r];
             }
-
             return total.value();
         }
 
@@ -236,7 +304,9 @@ namespace mangh { namespace hydrogenium
          *
          * - `r.npy`, `theta.npy`, `phi.npy` - coordinates (r, θ, ϕ),
          * - `psi.npy` - probability amplitude Ψ, complex array of shape (r, θ, ϕ),
-         * - `qn.npy`  - quantum numbers [n, l, m].
+         * - `qn.npy`  - quantum numbers [n, l, m],
+         * - `info.json` - the state (n, l, m, basis, orbital name), the mesh shape, and the checks
+         *   (total probability; expectation values and energy, on the mesh and exact).
          *
          * @param dir - output directory (must exist).
          *
@@ -252,6 +322,46 @@ namespace mangh { namespace hydrogenium
 
             const std::int32_t qn[] = { static_cast<std::int32_t>(qs.n), static_cast<std::int32_t>(qs.l), qs.m };
             npy::save(dir / "qn.npy", qn, { 3 });
+
+            const auto file = dir / "info.json";
+            std::ofstream os(file);
+            if (!os) throw std::runtime_error("Cannot open " + file.string() + " for writing");
+            os << info_json();
+            os.close();
+            if (!os) throw std::runtime_error("Failed to write " + file.string());
+        }
+
+        /// @brief The contents of info.json (see save); the energy on the mesh comes from the virial theorem, E = -<1/r>/2.
+        std::string info_json() const
+        {
+            auto number = [](real_t x)
+            {
+                std::ostringstream s;
+                s << std::setprecision(std::numeric_limits<real_t>::max_digits10) << x;
+                return s.str();
+            };
+            auto pair = [&](real_t grid, real_t exact)
+            {
+                return "{ \"grid\": " + number(grid) + ", \"exact\": " + number(exact) + " }";
+            };
+
+            std::ostringstream js;
+            js << "{\n"
+               << "  \"n\": " << qs.n << ",\n"
+               << "  \"l\": " << qs.l << ",\n"
+               << "  \"m\": " << qs.m << ",\n"
+               << "  \"basis\": \"" << (qs.basis == Basis::Real ? "real" : "complex") << "\",\n"
+               << "  \"orbital\": \"" << qs.Name() << "\",\n"
+               << "  \"shape\": [" << psi.pages() << ", " << psi.rows() << ", " << psi.columns() << "],\n"
+               << "  \"radial_step\": " << number(radial.delta) << ",\n"
+               << "  \"radial_max\": " << number(radial.back()) << ",\n"
+               << "  \"total_probability\": " << number(total_probability) << ",\n"
+               << "  \"mean_r\": " << pair(mean_r, qs.MeanR()) << ",\n"
+               << "  \"mean_r2\": " << pair(mean_r2, qs.MeanR2()) << ",\n"
+               << "  \"mean_inv_r\": " << pair(mean_inv_r, qs.MeanInvR()) << ",\n"
+               << "  \"energy_hartree\": " << pair(-mean_inv_r / 2.0, qs.Energy()) << "\n"
+               << "}\n";
+            return js.str();
         }
     };
 }}

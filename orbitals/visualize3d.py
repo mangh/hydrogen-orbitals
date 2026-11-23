@@ -11,6 +11,7 @@ Requires NumPy, SciPy and Plotly: pip install -r requirements.txt
 Examples:
     python visualize3d.py results/n4_l3_m1
     python visualize3d.py results/n3_l2_m0 --quantity real
+    python visualize3d.py results/n3_l2_m-2_real --quantity real
     python visualize3d.py results/n4_l3_m1 --fraction 0.5 0.9 --grid 80 --html n4_l3_m1.html
 """
 
@@ -26,7 +27,7 @@ try:
 except ImportError as e:
     sys.exit(f"visualize3d.py needs {e.name}: pip install -r requirements.txt")
 
-from visualize2d import QUANTITIES
+from visualize2d import QUANTITIES, load
 
 POSITIVE, NEGATIVE = "#d6604d", "#4393c3"  # lobe colors for Re Ψ / Im Ψ (as in RdBu)
 
@@ -92,8 +93,7 @@ def main():
     if not all(0 < p < 1 for p in args.fraction):
         parser.error("--fraction values must lie between 0 and 1")
 
-    r, theta, phi, psi = (np.load(args.data / f"{name}.npy") for name in ("r", "theta", "phi", "psi"))
-    n, l, m = np.load(args.data / "qn.npy")
+    r, theta, phi, psi, state = load(args.data)
 
     half_width = radial_extent(r, theta, phi, psi, args.extent)
     X, Y, Z, psi_xyz = resample(r, theta, phi, psi, half_width, args.grid, args.method)
@@ -103,7 +103,7 @@ def main():
     signed = args.quantity != "density"
     weight = F ** 2 if signed else F
     if not weight.any():
-        sys.exit(f"{args.quantity} is zero everywhere (n={n}, l={l}, m={m}), nothing to draw")
+        sys.exit(f"{args.quantity} is zero everywhere for {state}, nothing to draw")
 
     traces = []
     # Inner surfaces (small fractions) opaque, the outer ones translucent so that the inner stay visible.
@@ -125,7 +125,7 @@ def main():
     fig = go.Figure(traces)
     axis = dict(range=[-half_width, half_width])
     fig.update_layout(
-        title=f"{label}   n={n}, l={l}, m={m}   (surfaces enclosing {enclosed} of ∫{integrand})",
+        title=f"{label}   {state}   (surfaces enclosing {enclosed} of ∫{integrand})",
         scene=dict(xaxis=dict(title="X", **axis), yaxis=dict(title="Y", **axis), zaxis=dict(title="Z", **axis),
                    aspectmode="cube"),
         margin=dict(l=0, r=0, b=0, t=40),
