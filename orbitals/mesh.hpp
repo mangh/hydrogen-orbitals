@@ -10,6 +10,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
+#include <iterator>
 #include <limits>
 #include <sstream>
 #include <stdexcept>
@@ -278,24 +279,71 @@ namespace mangh { namespace hydrogenium
             return density;
         }
 
+        /// @brief The number of Gregory end corrections used for the radial integrals (see gregory_weights).
+        static constexpr std::size_t gregory_order = 6;
+
         /**
-         * @brief Radial integral `∫ f(r) ρ(r) r² dr` over the mesh (trapezoid rule), i.e. `∫ f(r) |Ψ|² dV`.
+         * @brief Gregory quadrature weights: the trapezoid rule with @p p end corrections, for N + 1 evenly spaced nodes.
+         *
+         * - ∫_x0^xN f(x) dx  ≈  h · Σ w_j f(x_j),   j = 0..N,
+         *
+         * - Gregory's formula:  T − h · Σ_{k=1}^{p} G_k · (∇^k f_N + (−1)^k Δ^k f_0),
+         *   where T is the trapezoid rule, Δ^k f_0 and ∇^k f_N are the forward and backward k-th differences at the two ends,
+         *   and G_k = 1/12, 1/24, 19/720, 3/160, 863/60480, 275/24192, ... (the Gregory coefficients).
+         *
+         * @param N - number of intervals,
+         * @param p - number of end corrections (p <= 6; it is reduced to N / 2 when N is small, so that the corrections at each end use at most half of the nodes).
+         *
+         * @returns N + 1 weights in units of the step h (only the first and the last p + 1 differ from the trapezoid weights 1/2, 1, ..., 1, 1/2).
+         *
+         * @remarks The rule is exact for polynomials of degree <= p. Unlike the trapezoid rule, it stays accurate when the
+         * integrand has non-zero odd derivatives at the ends: e.g. `r·R(r)²` (for `<1/r>`) of an s state rises linearly from r = 0,
+         * which makes the trapezoid error h²/12 · f'(0) (1.3% for 1s with h = 0.2); with p = 6 the error is ~4·10⁻⁵.
+         * The weights for p <= 6 are all positive (from p = 8 on some are negative).
+         *
+         * See: Fornberg, "Improving the accuracy of the trapezoidal rule", SIAM Review 63 (2021).
+         */
+        static std::vector<real_t> gregory_weights(std::size_t N, std::size_t p = gregory_order)
+        {
+            static constexpr real_t G[] = { 1.0 / 12, 1.0 / 24, 19.0 / 720, 3.0 / 160, 863.0 / 60480, 275.0 / 24192 };
+            p = std::min({ p, N / 2, std::size(G) });
+
+            std::vector<real_t> w(N + 1, 1.0);
+            w[0] = w[N] = 0.5;
+
+            for (std::size_t k = 1; k <= p; ++k)
+            {
+                real_t binomial = 1.0;  // C(k, j)
+                for (std::size_t j = 0; j <= k; ++j)
+                {
+                    const real_t sign_j = (j % 2) ? -1.0 : 1.0;           // (−1)^j
+                    // left end:  (−1)^k Δ^k f_0 = Σ_j (−1)^j C(k,j) f_j
+                    w[j] -= G[k - 1] * sign_j * binomial;
+                    // right end: ∇^k f_N = Σ_j (−1)^j C(k,j) f_(N−j)
+                    w[N - j] -= G[k - 1] * sign_j * binomial;
+                    binomial = binomial * static_cast<real_t>(k - j) / static_cast<real_t>(j + 1);
+                }
+            }
+            return w;
+        }
+
+        /**
+         * @brief Radial integral `∫ f(r) ρ(r) r² dr` over the mesh, i.e. `∫ f(r) |Ψ|² dV` (Gregory rule, see gregory_weights).
          *
          * @param density - ρ(r) at the radial nodes (see radial_density),
-         * @param f       - function of r; it is not evaluated at r = 0, where r² makes the integrand vanish
-         *                  for f = 1, r, r², 1/r (but not for 1/r²).
+         * @param f       - function of r; it is not evaluated at r = 0, where the integrand `f(r) ρ(r) r²` is taken as 0
+         *                  (true for f = 1, r, r², 1/r, but not for 1/r²).
          *
          * @returns The integral (for f = 1: the total probability, which should be very close to 1 for a normalized Ψ).
          */
         template<typename F>
         real_t integrate_radial(const std::vector<real_t>& density, F&& f) const
         {
+            const auto w = gregory_weights(radial.size() - 1);
+
             KahanSum<real_t> total;
             for (std::size_t r = 1; r < radial.size(); ++r)
-            {
-                const real_t w_r = radial[r] * radial[r] * radial.delta * (r + 1 == radial.size() ? 0.5 : 1.0);
-                total += w_r * f(radial[r]) * density[r];
-            }
+                total += w[r] * radial.delta * radial[r] * radial[r] * f(radial[r]) * density[r];
             return total.value();
         }
 

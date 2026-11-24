@@ -11,7 +11,7 @@ add_executable(test_orbitals test_orbitals.cpp)
 target_link_libraries(test_orbitals PRIVATE orbitals_headers)
 
 foreach(_test IN ITEMS laguerre legendre spherical_harmonics radial_extent mesh_probability
-                       expectation_values radial_convergence resolution orbital_names)
+                       expectation_values gregory_weights radial_convergence resolution orbital_names)
   add_test(NAME ${_test} COMMAND test_orbitals ${_test})
 endforeach()
 

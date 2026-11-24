@@ -34,9 +34,9 @@ python orbitals/visualize3d.py results/n3_l2_m-2_real --quantity real
   | energy E = −⟨1/r⟩/2   | −1 / (2n²) Eh  (1 Eh = 27.211386 eV) |
 
   The energy on the mesh comes from the virial theorem (⟨V⟩ = 2E for the Coulomb potential), so it tests ⟨1/r⟩ and the radial quadrature, not a separate solver.
-  - **Quadrature:** for θ, the Clenshaw–Curtis rule, which is exact for |Yl,m|². For ϕ, the periodic trapezoid rule, which is exact here. For r, the trapezoid rule, whose error is about h² (h = radial step); this error dominates.
-  - **Typical accuracy, default step 0.2:** P, ⟨r⟩ and ⟨r²⟩ are within about 1·10⁻⁴ for n = 1, and better for larger n.
-  - **⟨1/r⟩ and E for s states (l = 0):** 1.3% off for 1s, because the integrand r·R² rises linearly from r = 0. This is the trapezoid rule's worst case. Halving the step divides the error by 4: `--radial-step 0.025` gives 2·10⁻⁴.
+  - **Quadrature:** for θ, the Clenshaw–Curtis rule, which is exact for |Yl,m|². For ϕ, the periodic trapezoid rule, which is exact here. For r, the Gregory rule (`Mesh::gregory_weights`): the trapezoid rule with 6 correction terms at each end of the range. Its weights are all positive, and it is exact for polynomials up to degree 6.
+  - **Why not the plain trapezoid rule:** for s states (l = 0), the ⟨1/r⟩ integrand r·R² rises linearly from r = 0, which is the trapezoid rule's worst case. It made ⟨1/r⟩ and E 1.3% off for 1s; the Gregory rule brings that to 4·10⁻⁵, and it converges much faster as h shrinks (about h⁸ instead of h²).
+  - **Typical accuracy, default step 0.2:** every check is within about 1·10⁻⁴ for n = 1 (the worst case: only 5 steps per decay length of the 1s wave function), and better for larger n. For large n with l = 0, the remaining deficit in P (about 5·10⁻⁶ for n = 20) is the probability beyond r_max, not integration error. A smaller `--radial-step` improves n = 1 quickly: 0.1 gives better than 1·10⁻⁶.
 
 ## Build
 
@@ -115,7 +115,7 @@ ctest --test-dir build        # or: ctest --preset release
   - that the spherical harmonics are orthonormal, for both the complex and the real basis;
   - that the tail beyond `RadialExtent()` is < 5·10⁻⁶ for every (n, l);
   - that the mesh probability, ⟨r⟩, ⟨r²⟩ and ⟨1/r⟩ agree with the exact values, in both bases;
-  - that the radial quadrature error falls as h²;
+  - that the Gregory weights are exact for polynomials up to degree 6, and that the radial integration converges at high order (the error falls about 200× per halving of the step);
   - that invalid resolutions are rejected;
   - the orbital names.
 - `cli_*` tests check that invalid command-line options make the program fail.

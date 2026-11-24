@@ -243,7 +243,7 @@ namespace
 
     void test_mesh_probability()
     {
-        // The deficit is the radial trapezoid error (largest for n = 1: ~1e-4) plus the tail beyond the mesh (< 5e-6);
+        // The deficit is the radial quadrature error (largest for n = 1: ~3e-5) plus the tail beyond the mesh (< 5e-6);
         // the angular integrals are exact in both bases (for the real basis this needs > 2|m| azimuthal intervals)
         real_t worst = 0.0;
         const auto states = test_states();
@@ -251,7 +251,7 @@ namespace
         {
             const Mesh mesh = Mesh::for_state(qs);
             const real_t deficit = std::abs(1.0 - mesh.total_probability);
-            check(deficit < 2e-4, "n=%u, l=%u, m=%d (%s): total probability = %.12f",
+            check(deficit < 5e-5, "n=%u, l=%u, m=%d (%s): total probability = %.12f",
                   qs.n, qs.l, qs.m, basis_name(qs), mesh.total_probability);
             worst = std::max(worst, deficit);
         }
@@ -260,28 +260,26 @@ namespace
 
     void test_expectation_values()
     {
-        // <r>, <r²> on the default mesh agree with the exact values to ~1e-4 (n = 1, radial step 0.2), better for larger n.
-        // <1/r> (and the energy E = -<1/r>/2) of the s states is less accurate: the integrand r·R(r)² rises linearly
-        // from r = 0, so the trapezoid rule loses its usual endpoint cancellation (error ≈ h²/12 · f'(0), 1.3% for 1s).
-        real_t worst_r = 0.0, worst_r2 = 0.0, worst_inv_r = 0.0, worst_inv_r_s = 0.0;
+        // <r>, <r²>, <1/r> (and the energy E = -<1/r>/2) on the default mesh agree with the exact values to ~1e-4
+        // for n = 1 (radial step 0.2: 5 nodes per decay length of 1s), and better for larger n.
+        // (With the plain trapezoid rule, <1/r> of 1s was 1.3% off; see Mesh::gregory_weights.)
+        real_t worst_r = 0.0, worst_r2 = 0.0, worst_inv_r = 0.0;
         for (const auto& qs : test_states())
         {
             const Mesh mesh = Mesh::for_state(qs);
             const real_t err_r = std::abs(mesh.mean_r / qs.MeanR() - 1.0);
             const real_t err_r2 = std::abs(mesh.mean_r2 / qs.MeanR2() - 1.0);
             const real_t err_inv_r = std::abs(mesh.mean_inv_r / qs.MeanInvR() - 1.0);
-            const real_t tol_inv_r = qs.l == 0 ? 1.5e-2 : 2e-4;
 
-            check(err_r < 2e-4, "n=%u, l=%u, m=%d (%s): <r> = %.12g, exact %.12g", qs.n, qs.l, qs.m, basis_name(qs), mesh.mean_r, qs.MeanR());
-            check(err_r2 < 2e-4, "n=%u, l=%u, m=%d (%s): <r^2> = %.12g, exact %.12g", qs.n, qs.l, qs.m, basis_name(qs), mesh.mean_r2, qs.MeanR2());
-            check(err_inv_r < tol_inv_r, "n=%u, l=%u, m=%d (%s): <1/r> = %.12g, exact %.12g", qs.n, qs.l, qs.m, basis_name(qs), mesh.mean_inv_r, qs.MeanInvR());
+            check(err_r < 1e-4, "n=%u, l=%u, m=%d (%s): <r> = %.12g, exact %.12g", qs.n, qs.l, qs.m, basis_name(qs), mesh.mean_r, qs.MeanR());
+            check(err_r2 < 1e-4, "n=%u, l=%u, m=%d (%s): <r^2> = %.12g, exact %.12g", qs.n, qs.l, qs.m, basis_name(qs), mesh.mean_r2, qs.MeanR2());
+            check(err_inv_r < 1e-4, "n=%u, l=%u, m=%d (%s): <1/r> = %.12g, exact %.12g", qs.n, qs.l, qs.m, basis_name(qs), mesh.mean_inv_r, qs.MeanInvR());
 
             worst_r = std::max(worst_r, err_r);
             worst_r2 = std::max(worst_r2, err_r2);
-            (qs.l == 0 ? worst_inv_r_s : worst_inv_r) = std::max(qs.l == 0 ? worst_inv_r_s : worst_inv_r, err_inv_r);
+            worst_inv_r = std::max(worst_inv_r, err_inv_r);
         }
-        std::printf("  largest relative errors: <r> %.3g, <r^2> %.3g, <1/r> %.3g (l > 0), %.3g (l = 0)\n",
-                    worst_r, worst_r2, worst_inv_r, worst_inv_r_s);
+        std::printf("  largest relative errors: <r> %.3g, <r^2> %.3g, <1/r> %.3g\n", worst_r, worst_r2, worst_inv_r);
 
         // The exact values themselves: E = -<1/r>/2 (virial theorem), and two textbook cases
         const QuantumState s1{ 1, 0, 0 }, p2{ 2, 1, 0 };
@@ -291,20 +289,48 @@ namespace
             check(close(qs.Energy(), -qs.MeanInvR() / 2, 1e-15), "n=%u: E != -<1/r>/2", qs.n);
     }
 
+    void test_gregory_weights()
+    {
+        // With p end corrections the rule is exact for polynomials of degree <= p (here on [0, 1], N intervals);
+        // for few intervals the number of corrections drops to N/2, so the exactness to degree N/2.
+        for (std::size_t N : { std::size_t{ 2 }, std::size_t{ 5 }, std::size_t{ 12 }, std::size_t{ 13 }, std::size_t{ 40 }, std::size_t{ 101 } })
+        {
+            const auto w = Mesh::gregory_weights(N);
+            const real_t h = 1.0 / static_cast<real_t>(N);
+            const auto p = static_cast<int>(std::min(Mesh::gregory_order, N / 2));
+            for (int degree = 0; degree <= p; ++degree)
+            {
+                real_t sum = 0.0;
+                for (std::size_t j = 0; j <= N; ++j)
+                    sum += w[j] * h * std::pow(static_cast<real_t>(j) * h, degree);
+                check(close(sum, 1.0 / (degree + 1), 1e-13), "N=%zu: integral of x^%d = %.17g, exact %.17g", N, degree, sum, 1.0 / (degree + 1));
+            }
+            check(*std::min_element(w.begin(), w.end()) > 0.0, "N=%zu: a non-positive weight", N);
+        }
+    }
+
     void test_radial_convergence()
     {
-        // The trapezoid rule converges as h²: halving the radial step divides the <1/r> error of 1s by ~4.
+        // The Gregory rule (p = 6) converges much faster than the trapezoid rule (h²): halving the radial step divides the
+        // error of the 1s integral ∫_0^R r·R(r)² dr (the <1/r> integrand, which rises linearly from r = 0) by ~150-250
+        // (approaching 2^8 = 256 as h decreases; the trapezoid rule: 4).
+        // Compared with the exact integral over the same range [0, R]: 1 - e^(-2R)·(1 + 2R).
         const QuantumState s1{ 1, 0, 0 };
+        const real_t R = s1.RadialExtent();
+        const real_t exact = 1.0 - std::exp(-2.0 * R) * (1.0 + 2.0 * R);
+
         real_t previous = 0.0;
         for (real_t h : { 0.2, 0.1, 0.05, 0.025 })
         {
             const Mesh mesh = Mesh::for_state(s1, Resolution{ h, 0, 0 });
-            const real_t error = std::abs(mesh.mean_inv_r - s1.MeanInvR());
-            if (previous > 0.0)
-                check(previous / error > 3.8 && previous / error < 4.2, "h = %g: error ratio %.3f (expected ~4)", h, previous / error);
-            std::printf("  h = %-6g <1/r> error %.3e\n", h, error);
+            const real_t error = std::abs(mesh.mean_inv_r * mesh.total_probability - exact);
+            std::printf("  h = %-6g <1/r> integral error %.3e%s\n", h, error,
+                        previous > 0.0 ? ("  (" + std::to_string(previous / error) + "x smaller)").c_str() : "");
+            if (previous > 1e-12)
+                check(previous / error > 64.0, "h = %g: the error fell only %.1fx (expected > 64x)", h, previous / error);
             previous = error;
         }
+        check(previous < 1e-10, "h = 0.025: error %.3g (expected < 1e-10)", previous);
     }
 
     void test_resolution()
@@ -362,6 +388,7 @@ int main(int argc, char** argv)
         { "radial_extent", test_radial_extent },
         { "mesh_probability", test_mesh_probability },
         { "expectation_values", test_expectation_values },
+        { "gregory_weights", test_gregory_weights },
         { "radial_convergence", test_radial_convergence },
         { "resolution", test_resolution },
         { "orbital_names", test_orbital_names },
