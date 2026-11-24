@@ -18,7 +18,20 @@ target_include_directories(orbitals_headers INTERFACE "${CMAKE_CURRENT_SOURCE_DI
 
 # Warning options set differently for MSVC-like compilers (/W4) and all others (-Wall -Wextra ...):
 target_compile_options(orbitals_headers INTERFACE
-  "$<IF:$<STREQUAL:${CMAKE_CXX_COMPILER_FRONTEND_VARIANT},MSVC>,/W4,-Wall;-Wextra;-Wpedantic;-Wshadow;-Wconversion>"
+  "$<IF:$<STREQUAL:${CMAKE_CXX_COMPILER_FRONTEND_VARIANT},MSVC>,/W4,-Wall;-Wextra;-Wpedantic;-Wconversion>"
+)
+
+# Shadowing: warn about a local hiding another local (a real bug source), but not about
+#
+# - the `QuantumState(int n, ...) : n(n), ...` and
+# - the `Mesh(const linspace<real_t>& radial, ...) : radial(radial), ...`
+#
+# idioms (a constructor parameter hiding a member).
+# GCC's plain -Wshadow flags that idiom, so use its narrower level;
+# Clang's -Wshadow does not flag it (and Clang does not accept the -Wshadow=<level> form).
+target_compile_options(orbitals_headers INTERFACE
+  "$<$<CXX_COMPILER_ID:GNU>:-Wshadow=compatible-local>"
+  "$<$<AND:$<CXX_COMPILER_ID:Clang,AppleClang>,$<NOT:$<STREQUAL:${CMAKE_CXX_COMPILER_FRONTEND_VARIANT},MSVC>>>:-Wshadow>"
 )
 
 ##########################################################################
