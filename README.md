@@ -4,6 +4,8 @@ Computes hydrogen atom orbitals from the analytical solution of the time-indepen
 and saves the wave function on a spherical mesh as NumPy files. Two Python scripts then plot them:
 2D slices (Matplotlib) and interactive 3D isosurfaces (Plotly).
 
+This is a fork of Derek Harrison's [hydrogen-orbitals](https://github.com/derekharrison/hydrogen-orbitals); see [Origin](#origin).
+
 ```
 orbitals.exe -n 4 -l 3 -m 1               →  results/n4_l3_m1/{r,theta,phi,psi,qn}.npy, info.json
 orbitals.exe -n 3 -l 2 -m -2 --basis real  →  results/n3_l2_m-2_real/   (the 3d_xy orbital)
@@ -134,4 +136,17 @@ orbitals/visualize3d.py       3D isosurfaces
 tests/                        C++ unit tests and the SciPy cross-check
 ```
 
-The original program was written by Derek Harrison.
+## Origin
+
+This repository is a fork of [derekharrison/hydrogen-orbitals](https://github.com/derekharrison/hydrogen-orbitals), written by Derek Harrison in 2021. It contained a C++ program that evaluates the orbitals from the analytical solution on a spherical grid, and a Python script that plots them.
+
+Its history is kept here: the first 36 commits are the original repository's. In 2024 the original files were moved aside and reworked step by step. They have since been replaced by the code described above, which keeps the original approach but is largely rewritten:
+
+- header-only C++20 (or C++17) code, built with CMake;
+- a command line (CLI11);
+- NumPy output, with 2D and 3D visualizers;
+- the real orbitals;
+- numerical checks against exact values;
+- tests.
+
+The original repository does not specify a license, and this fork does not add one.
