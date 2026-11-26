@@ -15,30 +15,72 @@ python orbitals/visualize3d.py results/n3_l2_m-2_real --quantity real
 
 ## Physics and conventions
 
-- **Units:** atomic units. Distances are in Bohr radii (a0 = 1). The proton is treated as infinitely heavy (no reduced-mass correction).
-- **Wave function:** Ψn,l,m(r,θ,ϕ) = Rn,l(r) · Yl,m(θ,ϕ), with
-  - Rn,l(r) = N · e^(−ρ) · (2ρ)^l · L^(2l+1)_(n−l−1)(2ρ), where ρ = r/n. L is the generalized Laguerre polynomial in the modern convention (L₁^(α)(x) = 1 + α − x). Rn,l is normalized: ∫ R² r² dr = 1.
-  - Yl,m is, by default, the **complex** spherical harmonic, normalized to 1 on the sphere, **with the Condon–Shortley phase** (−1)^m. This is the convention of SciPy's `sph_harm_y` and C++17's `std::sph_legendre`. These states are eigenstates of Lz with eigenvalue m.
-  - With `--basis real`, Yl,m is the **real** spherical harmonic: √2·(−1)^m·Re Yl,m for m > 0, Yl,0 for m = 0, and √2·(−1)^m·Im Yl,|m| for m < 0. These are the orbitals of chemistry, which are not eigenstates of Lz for m ≠ 0. Each is proportional to a Cartesian polynomial divided by r^l, and is named after it: for l = 1, m = 1, −1, 0 give p_x, p_y, p_z; for l = 2, m = −2 … 2 give d_xy, d_yz, d_z2, d_xz, d_x2-y2; l = 3 gives the seven f orbitals. The positive lobe points along the positive axes, so p_x > 0 for x > 0.
-- **Quantum numbers:** 1 ≤ n ≤ 20, 0 ≤ l < n, −l ≤ m ≤ l. The limit n ≤ 20 is `QuantumState::max_n`. It is the range over which the radial cut-off (`QuantumState::RadialExtent`, r_max = n(2n + 12)) was verified to leave less than 5·10⁻⁶ of the probability outside the mesh.
+- **Units:** atomic units.
+
+  Distances are in Bohr radii ($a_0 = 1$). The proton is treated as infinitely heavy (no reduced-mass correction).
+
+- **Wave function:** $Ψ_{n,l,m}(r,θ,ϕ) = R_{n,l}(r) · Y_{l,m}(θ,ϕ)$, with
+
+  - $R_{n,l}(r) = N · e^{−ρ} · (2ρ)^l · L^{(2l+1)}_{n−l−1}(2ρ)$  is the radial part of $Ψ$, where:
+  
+    - $ρ = r/(n·a_0)$,
+    - $N = \sqrt{ \left( \frac{2}{n·a_0} \right)^3 · \frac{(n-l-1)!}{2n·(n+l)!} }$ - normalizing factor.
+    - $L$ is the generalized Laguerre polynomial in the modern convention: $L_1^{(α)}(x) = 1 + α − x$.
+    
+    $R_{n,l}$ is normalized: $\int_0^\infty R_{n,l}^2 \, r^2 \, dr = 1$.
+
+  - $Y_{l,m}$ for `--basis complex` (which is the default) is the **complex** spherical harmonic, normalized to 1 on the sphere, **with the Condon–Shortley phase** $(−1)^m$ (this is the convention of SciPy's `sph_harm_y` and C++17's `std::sph_legendre`). These states are eigenstates of $L_z$ with eigenvalue $m$.
+
+  - $Y_{l,m}$ for `--basis real` is the **real** spherical harmonic:
+
+    - $\sqrt{2}·(−1)^m·\mathrm{Re}(Y_{l,m})$ for $m > 0$,
+    - $Y_{l,0}$ for $m = 0$,
+    - $\sqrt{2}·(−1)^m·\mathrm{Im}(Y_{l,|m|})$ for $m < 0$.
+    
+    These are the orbitals of chemistry, which are not eigenstates of $L_z$ for $m ≠ 0$. Each is proportional to a Cartesian polynomial divided by $r^l$, and is named after it:
+    
+    - for $l = 1, m = 1, −1, 0$ give $p_x$, $p_y$, $p_z$;
+    - for $l = 2, m = −2 … 2$ give $d_{xy}$, $d_{yz}$, $d_{z^2}$, $d_{xz}$, $d_{x^2-y^2}$;
+    - for $l = 3$ gives the seven $f$ orbitals.
+    
+    The positive lobe points along the positive axes, so $p_x > 0$ for $x > 0$.
+
+- **Quantum numbers:** $1 ≤ n ≤ 20$, $0 ≤ l < n$, $−l ≤ m ≤ l$.
+
+  The limit $n ≤ 20$ (`QuantumState::max_n`) is the range over which the radial cut-off $r_{\max} = n·(2n + 12)$ (`QuantumState::RadialExtent`) was verified to leave less than $5·10^{-6}$ of the probability outside the mesh.
+
 - **Mesh** (`Mesh::for_state`; the defaults can be changed with the options under [Run](#run)):
-  - r ∈ [0, r_max] with a step of 0.2;
-  - θ ∈ [0, π] with an odd number of nodes (default max(21, 2l + 1)). The node count must be odd, so that there is a node at θ = π/2, and ≥ 2l + 1, so that the θ integral is exact.
-  - ϕ ∈ [0, 2π], with max(40, 4|m|) intervals by default; the last node repeats ϕ = 0. The number of intervals must be even, so that every half-plane has its opposite in the xz plots, and > 2|m|, so that the ϕ integral is exact for real orbitals.
+
+  - $r ∈ [0, r_{\max}]$ with a step of 0.2;
+
+  - $θ ∈ [0, π]$ with an odd number of nodes, by default $\max(21, 2l + 1)$.
+  
+    The node count must be odd, so that there is a node at $θ = π/2$, and $≥ 2l + 1$, so that the $θ$ integral is exact.
+
+  - $ϕ ∈ [0, 2π]$, with $\max(40, 4|m|)$ intervals by default; the last node repeats $ϕ = 0$.
+
+    The number of intervals must be even, so that every half-plane has its opposite in the $xz$ plots, and $> 2|m|$, so that the $ϕ$ integral is exact for real orbitals.
+
 - **Checks:** the program integrates over the mesh and prints a table comparing each result with the exact formula. It also writes the same numbers to `info.json`:
 
-  | quantity              | exact value                          |
-  |-----------------------|--------------------------------------|
-  | total probability P   | 1                                    |
-  | ⟨r⟩                   | (3n² − l(l+1)) / 2                   |
-  | ⟨r²⟩                  | n² (5n² + 1 − 3l(l+1)) / 2           |
-  | ⟨1/r⟩                 | 1 / n²                               |
-  | energy E = −⟨1/r⟩/2   | −1 / (2n²) Eh  (1 Eh = 27.211386 eV) |
+  | quantity              | exact value                                                       |
+  |-----------------------|-------------------------------------------------------------------|
+  | total probability $P$ | $1$                                                               |
+  | $⟨r⟩$                 | $(3n² − l(l+1)) / 2$                                              |
+  | $⟨r²⟩$                | $n² (5n² + 1 − 3l(l+1)) / 2$                                      |
+  | $⟨1/r⟩$               | $1 / n²$                                                          |
+  | energy $E = −⟨1/r⟩/2$ | $−1 / (2n²)$ $\mathrm{E_h}$ (1 $\mathrm{E_h}$ = 27.211386 eV)     |
 
-  The energy on the mesh comes from the virial theorem (⟨V⟩ = 2E for the Coulomb potential), so it tests ⟨1/r⟩ and the radial quadrature, not a separate solver.
-  - **Quadrature:** for θ, the Clenshaw–Curtis rule, which is exact for |Yl,m|². For ϕ, the periodic trapezoid rule, which is exact here. For r, the Gregory rule (`Mesh::gregory_weights`): the trapezoid rule with 6 correction terms at each end of the range. Its weights are all positive, and it is exact for polynomials up to degree 6.
-  - **Why not the plain trapezoid rule:** for s states (l = 0), the ⟨1/r⟩ integrand r·R² rises linearly from r = 0, which is the trapezoid rule's worst case. It made ⟨1/r⟩ and E 1.3% off for 1s; the Gregory rule brings that to 4·10⁻⁵, and it converges much faster as h shrinks (about h⁸ instead of h²).
-  - **Typical accuracy, default step 0.2:** every check is within about 1·10⁻⁴ for n = 1 (the worst case: only 5 steps per decay length of the 1s wave function), and better for larger n. For large n with l = 0, the remaining deficit in P (about 5·10⁻⁶ for n = 20) is the probability beyond r_max, not integration error. A smaller `--radial-step` improves n = 1 quickly: 0.1 gives better than 1·10⁻⁶.
+  The energy on the mesh comes from the virial theorem ($⟨V⟩ = 2E$ for the Coulomb potential), so it tests $⟨1/r⟩$ and the radial quadrature, not a separate solver.
+  - **Quadrature:**
+
+    - for $θ$, the *Clenshaw–Curtis* rule, which is exact for $|Y_{l,m}|²$.
+    - for $ϕ$, the periodic trapezoid rule, which is exact here.
+    - for $r$, the *Gregory* rule (`Mesh::gregory_weights`): the trapezoid rule with 6 correction terms at each end of the range. Its weights are all positive, and it is exact for polynomials up to degree 6.
+
+  - **Why not the plain trapezoid rule:** for $s$ states ($l = 0$), the $⟨1/r⟩$ integrand $r·R²$ rises linearly from $r = 0$, which is the trapezoid rule's worst case. It made $⟨1/r⟩$ and $E$ 1.3% off for $1s$; the Gregory rule brings that to $4·10^{-5}$, and it converges much faster as $h$ shrinks (about $h^8$ instead of $h^2$).
+
+  - **Typical accuracy, default step 0.2:** every check is within about $1·10^{-4}$ for $n = 1$ (the worst case: only 5 steps per decay length of the $1s$ wave function), and better for larger $n$. For large $n$ with $l=0$, the remaining deficit in $P$ (about $5·10^{-6}$ for $n = 20$) is the probability beyond $r_{\max}$, not integration error. A smaller `--radial-step` improves $n = 1$ quickly: 0.1 gives better than $1·10^{-6}$.
 
 ## Build
 
@@ -69,12 +111,12 @@ orbitals.exe -n <n> -l <l> -m <m> [--basis complex|real] [--radial-step <h>]
              [--polar-points <Nθ>] [--azimuthal-points <Nϕ>] [-o <dir>]
 ```
 
-| option               | default              | constraint                                          |
-|----------------------|----------------------|-----------------------------------------------------|
-| `--basis`            | `complex`            | `complex` (e^(imϕ), eigenstates of Lz) or `real` (p_x, d_xy …) |
-| `--radial-step`      | 0.2 (Bohr radii)     | 0 < h ≤ r_max / 2                                    |
-| `--polar-points`     | max(21, 2l + 1)      | odd, ≥ max(3, 2l + 1)                                |
-| `--azimuthal-points` | max(40, 4·abs(m)) + 1 | odd, ≥ 5, > 2·abs(m) + 1 (the node at 2π included)  |
+| option               | default                                 | constraint                                                                |
+|----------------------|-----------------------------------------|---------------------------------------------------------------------------|
+| `--basis`            | `complex`                               | `complex` ($e^{imϕ}$, eigenstates of $L_z$) or `real` ($p_x$, $d_{xy}$ …) |
+| `--radial-step`      | $0.2$ (Bohr radii)                      | $0 < h ≤ r_{\max} / 2$                                                    |
+| `--polar-points`     | $\max(21, 2l + 1)$                      | odd, $≥ \max(3, 2l + 1)$                                                  |
+| `--azimuthal-points` | $\max(40, 4 \lvert m \rvert) + 1$       | odd, $≥ 5$, $> 2 \lvert m \rvert + 1$ (the node at $2π$ included)         |
 
 A mesh whose `psi` would exceed 4 GB is refused. Invalid options are reported, and the program exits with a non-zero code.
 
@@ -90,7 +132,7 @@ The output directory defaults to `results/n<n>_l<l>_m<m>`, with `_real` appended
 | `info.json` | basis, orbital name, mesh shape and step, and the checks (each as `{"grid": …, "exact": …}`) |
 
 For the real basis, `psi.npy` is still complex128, with a zero imaginary part, so all the tools read both bases the same way.
-The size of `psi.npy` grows quickly with n: 5 MB for n = 4, and about 250 MB for n = 20, l = m = 19. Finer angular meshes multiply that: `--polar-points 91 --azimuthal-points 181` is about 20 times the default.
+The size of `psi.npy` grows quickly with $n$: 5 MB for $n = 4$, and about 250 MB for $n = 20$, $l = m = 19$. Finer angular meshes multiply that: `--polar-points 91 --azimuthal-points 181` is about 20 times the default.
 
 ## Visualize
 
@@ -104,7 +146,7 @@ python orbitals/visualize2d.py results/n4_l3_m1 --quantity density|real|imag --p
 python orbitals/visualize3d.py results/n4_l3_m1 --fraction 0.5 0.9 --grid 80
 ```
 
-`--quantity real` and `imag` show Re Ψ and Im Ψ. For a complex orbital with m ≠ 0, these are the cos(mϕ) and sin(mϕ) combinations. To show a chemists' real orbital (p_y, d_xy …) with its signed lobes, compute it with `--basis real` and plot `--quantity real`; its imaginary part is zero. The plot titles give the orbital name from `info.json`.
+`--quantity real` and `imag` show $\mathrm{Re}(Ψ)$ and $\mathrm{Im}(Ψ)$. For a complex orbital with $m ≠ 0$, these are the $\cos(mϕ)$ and $\sin(mϕ)$ combinations. To show a chemists' real orbital ($p_y$, $d_{xy}$ …) with its signed lobes, compute it with `--basis real` and plot `--quantity real`; its imaginary part is zero. The plot titles give the orbital name from `info.json`.
 
 ## Tests
 
