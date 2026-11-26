@@ -33,9 +33,9 @@ python orbitals/visualize3d.py results/n3_l2_m-2_real --quantity real
 
   - $Y_{l,m}$ for `--basis real` is the **real** spherical harmonic:
 
-    - $\sqrt{2}·(−1)^m·\operatorname{Re}(Y_{l,m})$ for $m > 0$,
+    - $\sqrt{2}·(−1)^m·\mathrm{Re}(Y_{l,m})$ for $m > 0$,
     - $Y_{l,0}$ for $m = 0$,
-    - $\sqrt{2}·(−1)^m·\operatorname{Im}(Y_{l,|m|})$ for $m < 0$.
+    - $\sqrt{2}·(−1)^m·\mathrm{Im}(Y_{l,|m|})$ for $m < 0$.
     
     These are the orbitals of chemistry, which are not eigenstates of $L_z$ for $m ≠ 0$. Each is proportional to a Cartesian polynomial divided by $r^l$, and is named after it:
     
@@ -146,7 +146,7 @@ python orbitals/visualize2d.py results/n4_l3_m1 --quantity density|real|imag --p
 python orbitals/visualize3d.py results/n4_l3_m1 --fraction 0.5 0.9 --grid 80
 ```
 
-`--quantity real` and `imag` show $\operatorname{Re}(Ψ)$ and $\operatorname{Im}(Ψ)$. For a complex orbital with $m ≠ 0$, these are the $\cos(mϕ)$ and $\sin(mϕ)$ combinations. To show a chemists' real orbital ($p_y$, $d_{xy}$ …) with its signed lobes, compute it with `--basis real` and plot `--quantity real`; its imaginary part is zero. The plot titles give the orbital name from `info.json`.
+`--quantity real` and `imag` show $\mathrm{Re}(Ψ)$ and $\mathrm{Im}(Ψ)$. For a complex orbital with $m ≠ 0$, these are the $\cos(mϕ)$ and $\sin(mϕ)$ combinations. To show a chemists' real orbital ($p_y$, $d_{xy}$ …) with its signed lobes, compute it with `--basis real` and plot `--quantity real`; its imaginary part is zero. The plot titles give the orbital name from `info.json`.
 
 ## Tests
 
