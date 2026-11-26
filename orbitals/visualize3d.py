@@ -16,12 +16,16 @@ Examples:
 """
 
 import argparse
+import shutil
+import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 try:
     import numpy as np
     import plotly.graph_objects as go
+    import plotly.io as pio
     from plotly.colors import sample_colorscale
     from scipy.interpolate import RegularGridInterpolator
 except ImportError as e:
@@ -74,6 +78,25 @@ def surface(X, Y, Z, F, level, opacity, color=None):
         caps=dict(x_show=False, y_show=False, z_show=False),
         opacity=opacity, hoverinfo="skip",
     )
+
+
+def show(fig):
+    """Opens the figure in the browser, or says why it cannot."""
+    if pio.renderers.default:
+        fig.show()
+        return
+    # Plotly found no browser (webbrowser.get() failed at import), so fig.show() would silently do nothing.
+    # Under WSL without a Linux browser, Windows can open an HTML file in its default browser.
+    if shutil.which("wslpath") and shutil.which("explorer.exe"):
+        with tempfile.NamedTemporaryFile("w", suffix=".html", prefix="orbital_", delete=False) as f:
+            fig.write_html(f, include_plotlyjs=True)  # plotly.js embedded: works offline
+        windows_path = subprocess.run(["wslpath", "-w", f.name], capture_output=True, text=True,
+                                      check=True).stdout.strip()
+        subprocess.run(["explorer.exe", windows_path])  # its exit code is 1 even on success, so it is not checked
+        print(f"No Linux browser found; opened {f.name} in the Windows default browser")
+        return
+    sys.exit("No web browser found to show the figure. Save it with --html FILE and open that file, "
+             "or name a browser in the BROWSER environment variable.")
 
 
 def main():
@@ -135,7 +158,7 @@ def main():
         fig.write_html(args.html, include_plotlyjs="cdn")
         print(f"Saved {args.html.resolve()}")
     else:
-        fig.show()
+        show(fig)
 
 
 if __name__ == "__main__":
