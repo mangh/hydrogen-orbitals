@@ -47,17 +47,17 @@ python orbitals/visualize3d.py results/n3_l2_m-2_real --quantity real
 
 - **Quantum numbers:** $1 ≤ n ≤ 20$, $0 ≤ l < n$, $−l ≤ m ≤ l$.
 
-  The limit $n ≤ 20$ (`QuantumState::max_n`) is the range over which the radial cut-off (`QuantumState::RadialExtent`, $r_{max} = n·(2n + 12)$) was verified to leave less than $5·10^{-6}$ of the probability outside the mesh.
+  The limit $n ≤ 20$ (`QuantumState::max_n`) is the range over which the radial cut-off $r_{\max} = n·(2n + 12)$ (`QuantumState::RadialExtent`) was verified to leave less than $5·10^{-6}$ of the probability outside the mesh.
 
 - **Mesh** (`Mesh::for_state`; the defaults can be changed with the options under [Run](#run)):
 
-  - $r ∈ [0, r_{max}]$ with a step of 0.2;
+  - $r ∈ [0, r_{\max}]$ with a step of 0.2;
 
-  - $θ ∈ [0, π]$ with an odd number of nodes (default $max(21, 2l + 1)$).
+  - $θ ∈ [0, π]$ with an odd number of nodes, by default $\max(21, 2l + 1)$.
   
     The node count must be odd, so that there is a node at $θ = π/2$, and $≥ 2l + 1$, so that the $θ$ integral is exact.
 
-  - $ϕ ∈ [0, 2π]$, with $max(40, 4|m|)$ intervals by default; the last node repeats $ϕ = 0$.
+  - $ϕ ∈ [0, 2π]$, with $\max(40, 4|m|)$ intervals by default; the last node repeats $ϕ = 0$.
 
     The number of intervals must be even, so that every half-plane has its opposite in the $xz$ plots, and $> 2|m|$, so that the $ϕ$ integral is exact for real orbitals.
 
@@ -80,7 +80,7 @@ python orbitals/visualize3d.py results/n3_l2_m-2_real --quantity real
 
   - **Why not the plain trapezoid rule:** for $s$ states ($l = 0$), the $⟨1/r⟩$ integrand $r·R²$ rises linearly from $r = 0$, which is the trapezoid rule's worst case. It made $⟨1/r⟩$ and $E$ 1.3% off for $1s$; the Gregory rule brings that to $4·10^{-5}$, and it converges much faster as $h$ shrinks (about $h^8$ instead of $h^2$).
 
-  - **Typical accuracy, default step 0.2:** every check is within about $1·10^{-4}$ for $n = 1$ (the worst case: only 5 steps per decay length of the $1s$ wave function), and better for larger $n$. For large $n$ with $l=0$, the remaining deficit in $P$ (about $5·10^{-6}$ for $n = 20$) is the probability beyond $r_{max}$, not integration error. A smaller `--radial-step` improves $n = 1$ quickly: 0.1 gives better than $1·10^{-6}$.
+  - **Typical accuracy, default step 0.2:** every check is within about $1·10^{-4}$ for $n = 1$ (the worst case: only 5 steps per decay length of the $1s$ wave function), and better for larger $n$. For large $n$ with $l=0$, the remaining deficit in $P$ (about $5·10^{-6}$ for $n = 20$) is the probability beyond $r_{\max}$, not integration error. A smaller `--radial-step` improves $n = 1$ quickly: 0.1 gives better than $1·10^{-6}$.
 
 ## Build
 
@@ -114,9 +114,9 @@ orbitals.exe -n <n> -l <l> -m <m> [--basis complex|real] [--radial-step <h>]
 | option               | default                                 | constraint                                                                |
 |----------------------|-----------------------------------------|---------------------------------------------------------------------------|
 | `--basis`            | `complex`                               | `complex` ($e^{imϕ}$, eigenstates of $L_z$) or `real` ($p_x$, $d_{xy}$ …) |
-| `--radial-step`      | $0.2$ (Bohr radii)                      | $0 < h ≤ r_{max} / 2$                                                    |
-| `--polar-points`     | $max(21, 2l + 1)$                      | odd, $≥ max(3, 2l + 1)$                                                  |
-| `--azimuthal-points` | $max(40, 4 \lvert m \rvert) + 1$       | odd, $≥ 5$, $> 2 \lvert m \rvert + 1$ (the node at $2π$ included)         |
+| `--radial-step`      | $0.2$ (Bohr radii)                      | $0 < h ≤ r_{\max} / 2$                                                    |
+| `--polar-points`     | $\max(21, 2l + 1)$                      | odd, $≥ \max(3, 2l + 1)$                                                  |
+| `--azimuthal-points` | $\max(40, 4 \lvert m \rvert) + 1$       | odd, $≥ 5$, $> 2 \lvert m \rvert + 1$ (the node at $2π$ included)         |
 
 A mesh whose `psi` would exceed 4 GB is refused. Invalid options are reported, and the program exits with a non-zero code.
 
